@@ -168,14 +168,17 @@ eşleşecek şekilde yazıldı; environment adı iki tarafta da aynı olmalı. A
 *Settings → Environments* altında `pypi` adlı environment oluşturulur (isteğe bağlı
 onay kuralı eklenebilir).
 
-Yayın, sürüm etiketi push edilerek tetiklenir:
+Etiket push edildiğinde iş akışı paketi derler ve `twine check` çalıştırır; **yükleme
+adımı elle tetiklenir** (Actions → *Yayın* → *Run workflow*). Bunun iki sebebi var:
+trusted publisher kaydı yapılmadan yükleme işi hata verir, ve zaten yayınlanmış bir
+sürümü etiketlemek yüklemeyi yeniden denememelidir. Kayıt tamamlandıktan sonra
+`release.yml` içindeki `if: github.event_name == 'workflow_dispatch'` satırı
+kaldırılırsa yayın tamamen otomatikleşir.
 
 ```bash
 git tag -a v0.2.0 -m "cvflair 0.2.0"
 git push origin v0.2.0
 ```
-
-İş akışı paketi derler, `twine check` çalıştırır ve PyPI'a yükler.
 
 ## 6. Yayın sonrası
 
