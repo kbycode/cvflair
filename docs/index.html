@@ -39,6 +39,8 @@
     padding: 20px 24px 48px;
     align-items: start;
   }
+  /* Kod bloğunun uzun satırları sütunu genişletmesin: taşma pre içinde kalır. */
+  main > div { min-width: 0; }
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; }
   }
@@ -313,13 +315,20 @@ const URL_KEYS = {
 const BOX_STYLES = ["box", "round", "corner"];
 const MAX_COLORS = 8;
 
-const LABELS = ["kisi 0.94", "bisiklet 0.81", "kopek 0.66"];
+// Sahne figürleri. Kutular bu figürlerin gerçek sınırlarından hesaplanır, elle
+// yerleştirilmez; hareket ettiklerinde kutu da onlarla birlikte gider.
+const GROUND = 0.9;
+const FIGURE = "#98a1b2";
+const FIGURE_DARK = "#6c7488";
 
 let state = structuredClone(PRESETS.neon);
 let preset = "neon";
 let animating = true;
 let cameraStream = null;
-let tick = 0;
+// Sahne saati saniye cinsinden ilerler; kare sayacı kullanılsaydı hareket hızı
+// ekranın tazeleme hızına göre değişirdi.
+let sceneTime = 0;
+let lastFrame = 0;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -537,46 +546,253 @@ function drawLabel(box, colour, text) {
   ctx.fillText(text, x + state.textPadding, y + boxHeight / 2 + 1);
 }
 
-function detections(width, height) {
-  const phase = animating ? tick / 60 : 0;
-  const wobble = (offset, amount) => Math.sin(phase + offset) * amount;
-  return [
-    [0.08 * width + wobble(0, 26), 0.22 * height, 0.34 * width + wobble(0, 26), 0.86 * height],
-    [0.42 * width, 0.34 * height + wobble(1.6, 22), 0.62 * width, 0.76 * height + wobble(1.6, 22)],
-    [0.70 * width + wobble(3.1, 14), 0.14 * height, 0.92 * width + wobble(3.1, 14), 0.58 * height],
-  ];
+function segment(x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
 }
 
-function drawScene(width, height) {
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#1a1c20");
-  gradient.addColorStop(1, "#33373f");
-  ctx.fillStyle = gradient;
+function drawPerson(time) {
+  const swing = Math.sin(time * 3.6);
+  const bob = Math.abs(Math.cos(time * 3.6)) * 3;
+  ctx.strokeStyle = FIGURE;
+  ctx.fillStyle = FIGURE;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.translate(0, -bob);
+
+  // Arkadaki uzuvlar koyu tonda: adım açıkken bacaklar birbirine karışmıyor.
+  // Ayaklar sabit bir açıklıkla başlar, salınım onun üstüne binir: adım kapandığında
+  // bile iki bacak ayrı görünür.
+  ctx.lineWidth = 13;
+  ctx.strokeStyle = FIGURE_DARK;
+  segment(-6, -70, -11 - swing * 19, -1);
+  ctx.lineWidth = 9;
+  segment(-11, -112, -14 + swing * 16, -80);
+
+  ctx.strokeStyle = FIGURE;
+  ctx.lineWidth = 22;
+  segment(0, -112, 0, -72);                  // gövde
+  ctx.lineWidth = 10;
+  segment(-12, -113, 12, -113);              // omuz
+  ctx.lineWidth = 8;
+  segment(0, -121, 0, -115);                 // boyun
+
+  ctx.lineWidth = 13;
+  segment(6, -70, 11 + swing * 19, -1);      // öndeki bacak
+  ctx.lineWidth = 9;
+  segment(11, -112, 14 - swing * 16, -80);   // öndeki kol
+
+  ctx.fillStyle = FIGURE;
+  ctx.beginPath();
+  ctx.arc(1, -136, 13, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBicycle(time) {
+  const spin = time * 5.2;
+  const radius = 30;
+  ctx.strokeStyle = FIGURE;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  for (const hub of [-46, 46]) {
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(hub, -31, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = FIGURE_DARK;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i += 1) {
+      const angle = spin + (i * Math.PI) / 3;
+      segment(hub, -31, hub + Math.cos(angle) * radius, -31 + Math.sin(angle) * radius);
+    }
+    ctx.strokeStyle = FIGURE;
+  }
+
+  ctx.lineWidth = 5;
+  segment(-46, -31, -8, -70);   // arka üst boru
+  segment(-46, -31, 6, -31);    // alt zincir borusu
+  segment(-8, -70, 6, -31);     // sele borusu
+  segment(-8, -70, 34, -68);    // üst boru
+  segment(34, -68, 46, -31);    // ön çatal
+  segment(6, -31, 34, -68);     // ön üçgen
+
+  ctx.lineWidth = 4;
+  segment(28, -74, 44, -74);    // gidon
+  ctx.lineWidth = 6;
+  segment(-16, -73, -2, -73);   // sele
+}
+
+function drawDog(time) {
+  const step = Math.sin(time * 4.8);
+  const tail = Math.sin(time * 11) * 9;
+  ctx.strokeStyle = FIGURE_DARK;
+  ctx.fillStyle = FIGURE;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  ctx.lineWidth = 7;
+  segment(-24, -32, -24 - step * 13, -1);
+  segment(26, -32, 26 - step * 13, -1);
+  ctx.strokeStyle = FIGURE;
+  segment(-18, -32, -18 + step * 13, -1);
+  segment(32, -32, 32 + step * 13, -1);
+
+  ctx.lineWidth = 6;
+  segment(-30, -44, -46, -50 + tail);            // kuyruk
+
+  ctx.lineWidth = 30;
+  segment(-24, -44, 26, -44);                    // gövde
+  ctx.lineWidth = 13;
+  segment(28, -46, 42, -62);                     // boyun
+
+  ctx.beginPath();
+  ctx.arc(44, -66, 12, 0, Math.PI * 2);          // kafa
+  ctx.fill();
+  ctx.fillRect(48, -68, 14, 8);                  // burun
+  ctx.beginPath();
+  ctx.moveTo(38, -74);
+  ctx.lineTo(34, -60);
+  ctx.lineTo(45, -66);
+  ctx.closePath();
+  ctx.fill();                                    // kulak
+}
+
+const ACTORS = [
+  {
+    label: "kisi",
+    draw: drawPerson,
+    bounds: [-32, -152, 32, 3],
+    scale: 1,
+    lift: 0,
+    // Yürüme mesafesi ve yönü; yön hız işaretinden gelir, figür ona göre aynalanır.
+    at: (time, width) => {
+      const wave = Math.sin(time * 0.5);
+      return { x: (0.17 + 0.1 * wave) * width, dir: Math.cos(time * 0.5) >= 0 ? 1 : -1 };
+    },
+    confidence: (time) => 0.9 + 0.08 * Math.sin(time * 1.6),
+  },
+  {
+    label: "bisiklet",
+    draw: drawBicycle,
+    bounds: [-80, -84, 80, 3],
+    scale: 0.72,
+    // Arka planda, kendi zemin çizgisinde geçiyor: hem derinlik hissi veriyor hem de
+    // öndeki figürlerle sürekli çakışmıyor.
+    lift: -58,
+    at: (time, width) => {
+      const span = width + 260;
+      return { x: span - ((time * 78) % span) - 130, dir: -1 };
+    },
+    confidence: (time) => 0.78 + 0.14 * Math.sin(time * 2.1 + 1),
+  },
+  {
+    label: "kopek",
+    draw: drawDog,
+    bounds: [-54, -82, 66, 3],
+    scale: 0.85,
+    lift: 0,
+    at: (time, width) => {
+      const wave = Math.sin(time * 0.75 + 2);
+      return { x: (0.72 + 0.14 * wave) * width, dir: Math.cos(time * 0.75 + 2) >= 0 ? 1 : -1 };
+    },
+    confidence: (time) => 0.66 + 0.2 * Math.sin(time * 2.6),
+  },
+];
+
+// Gerçek takipçiler kutuyu bir kare geriden yakalar; aynı yumuşatma burada da var.
+const smoothed = new Array(ACTORS.length).fill(null);
+
+function actorFrames(width, height) {
+  const time = sceneTime;
+  const groundY = height * GROUND;
+
+  return ACTORS.map((actor, index) => {
+    const { x, dir } = actor.at(time, width);
+    const scale = actor.scale;
+    const lane = groundY + (actor.lift || 0);
+    const [minX, minY, maxX, maxY] = actor.bounds;
+    const flipped = dir < 0 ? [-maxX, minY, -minX, maxY] : [minX, minY, maxX, maxY];
+
+    const target = [
+      x + flipped[0] * scale,
+      lane + flipped[1] * scale,
+      x + flipped[2] * scale,
+      lane + flipped[3] * scale,
+    ];
+    const previous = smoothed[index];
+    smoothed[index] = previous
+      ? previous.map((value, i) => value + (target[i] - value) * 0.35)
+      : target;
+
+    return { actor, time, x, dir, scale, groundY: lane, box: smoothed[index] };
+  });
+}
+
+function drawScene(frames, width, height) {
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, "#171a1f");
+  sky.addColorStop(1, "#2c3038");
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
-  for (const [x1, y1, x2, y2] of detections(width, height)) {
-    roundedPath(x1, y1, x2 - x1, y2 - y1, 14);
+  const groundY = height * GROUND;
+  const floor = ctx.createLinearGradient(0, groundY - 40, 0, height);
+  floor.addColorStop(0, "#2c3038");
+  floor.addColorStop(1, "#1b1e23");
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, groundY, width, height - groundY);
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  segment(0, groundY + 0.5, width, groundY + 0.5);
+
+  // Arkadaki figürler önce çizilir, öndekiler onların üstünü kapatır.
+  for (const frame of [...frames].sort((a, b) => a.groundY - b.groundY)) {
+    const width2 = (frame.actor.bounds[2] - frame.actor.bounds[0]) * frame.scale;
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(frame.x, frame.groundY + 3, width2 * 0.34, 5, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(frame.x, frame.groundY);
+    ctx.scale(frame.dir * frame.scale, frame.scale);
+    frame.actor.draw(frame.time);
+    ctx.restore();
   }
 }
 
-function render() {
+function render(now = performance.now()) {
+  // Sekme arka plandayken kareler durur; sıçramayı önlemek için adım sınırlanır.
+  const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
+  lastFrame = now;
+  if (animating) sceneTime += delta;
+
   const { width, height } = canvas;
+  const frames = actorFrames(width, height);
+
   if (cameraStream && video.readyState >= 2) {
     ctx.drawImage(video, 0, 0, width, height);
   } else {
-    drawScene(width, height);
+    drawScene(frames, width, height);
   }
 
-  detections(width, height).forEach((box, index) => {
+  frames.forEach((frame, index) => {
     const colour = state.palette[index % state.palette.length];
+    const box = frame.box;
     if (state.glow) strokeBox(box, dim(colour, state.glowDim), state.thickness + state.glowThickness);
     strokeBox(box, colour, state.thickness);
-    if (state.labels) drawLabel(box, colour, LABELS[index % LABELS.length]);
+    if (state.labels) {
+      const score = frame.actor.confidence(frame.time).toFixed(2);
+      drawLabel(box, colour, frame.actor.label + " " + score);
+    }
   });
 
-  if (animating) tick += 1;
   requestAnimationFrame(render);
 }
 
