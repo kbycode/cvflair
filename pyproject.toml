@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvflair"
+dynamic = ["version"]
+description = "Theme-based, model-agnostic visualisation layer for computer vision detections, built on supervision."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "kbycode" }]
+keywords = [
+    "computer-vision", "opencv", "supervision", "annotation", "visualization",
+    "webcam", "yolo", "bounding-box", "themes",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Multimedia :: Video :: Display",
+]
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    # supervision does the drawing; its annotator API still moves between
+    # minor releases, so the range stays narrow on purpose.
+    "supervision>=0.28,<0.30",
+]
+
+[project.optional-dependencies]
+# Ultralytics AGPL-3.0 lisanslı: bilinçli olarak zorunlu bağımlılık değil, ağırlık
+# veya kod pakete gömülü değil. Lisans sorumluluğu onu kuran projeye ait.
+yolo = ["ultralytics>=8.2"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "pillow>=10.0",  # tools/make_demo_gif.py, sadece dokümantasyon çıktısı için
+]
+release = [
+    "build>=1.2",
+    "twine>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/kbycode/cvflair"
+Documentation = "https://github.com/kbycode/cvflair#readme"
+Repository = "https://github.com/kbycode/cvflair"
+Issues = "https://github.com/kbycode/cvflair/issues"
+Changelog = "https://github.com/kbycode/cvflair/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = { attr = "cvflair.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cvflair = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

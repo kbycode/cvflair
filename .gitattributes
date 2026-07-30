@@ -1,0 +1,5 @@
+# Metin dosyaları depoda LF olarak saklanır; çalışma kopyası platforma göre çevrilir.
+* text=auto
+
+*.png binary
+*.gif binary

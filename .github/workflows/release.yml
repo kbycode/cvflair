@@ -1,0 +1,52 @@
+name: Yayın
+
+# Sürüm etiketi push edilince çalışır: git tag -a v0.2.0 -m "..." && git push origin v0.2.0
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    name: derle
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Kurulum
+        run: pip install build twine
+
+      - name: Derle
+        run: python -m build
+
+      - name: Metadata denetimi
+        run: twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: PyPI'a yükle
+    needs: build
+    runs-on: ubuntu-latest
+
+    # PyPI'daki "trusted publisher" kaydıyla aynı environment adı olmalı.
+    environment: pypi
+
+    # Token yerine kısa ömürlü OIDC kimliği kullanılıyor; depoda sır tutulmuyor.
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
