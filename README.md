@@ -144,7 +144,11 @@ my_theme = Theme(
 cam = Camera(source=0, theme=my_theme)
 ```
 
-Temaları görmenin iki yolu:
+Ayarları tarayıcıda deneyip hazır `Theme(...)` kodunu kopyalamak için:
+**[tema playground](https://kbycode.github.io/cvflair/)** — kurulum gerektirmez,
+tamamen istemci tarafında çalışır, ayarlar bağlantıda taşınır.
+
+Temaları yerelde görmenin iki yolu:
 
 ```bash
 python examples/demo_fake_detections.py   # canlı kamera + hareketli sahte tespitler
@@ -210,8 +214,8 @@ Yayın adımları: [docs/pypi-yayin-rehberi.md](docs/pypi-yayin-rehberi.md).
 | Faz | İçerik | Durum |
 |---|---|---|
 | Faz 1 | Kamera döngüsü, `minimal`/`neon`/`pastel` temaları, README, demo GIF, testler | tamam |
-| Faz 2 | Model bağlama (`stream(model=...)`) | tamam |
-| Faz 2 | PyPI paketi, Türkçe dokümantasyon sitesi, tema playground, `cyberpunk`/`hud` | sırada |
+| Faz 2 | Model bağlama, PyPI paketi, [tema playground](https://kbycode.github.io/cvflair/) | tamam |
+| Faz 2 | Türkçe dokümantasyon sitesi, `cyberpunk`/`hud` temaları | sırada |
 | Faz 3 | GitHub Actions (lint + test), issue şablonları, örnek galerisi | planlandı |
 
 ## Lisans

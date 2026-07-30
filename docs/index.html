@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cvflair tema playground</title>
+<meta name="description" content="cvflair temalarını tarayıcıda ayarla, hazır Python kodunu kopyala. Tamamen istemci tarafı.">
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1c1f25;
+    --panel-2: #23262e;
+    --line: #2f333c;
+    --text: #e6e8ec;
+    --muted: #9aa1ad;
+    --accent: #39ff14;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header {
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { margin: 0 0 6px; font-size: 20px; letter-spacing: .2px; }
+  header h1 span { color: var(--accent); }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  header a { color: var(--accent); }
+
+  main {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 24px 48px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+  }
+
+  .row { margin-bottom: 14px; }
+  .row:last-child { margin-bottom: 0; }
+  .row label.title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+  .row label.title b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="color"] {
+    width: 34px; height: 30px; padding: 0;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: none; cursor: pointer;
+  }
+  select, button {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+  select { width: 100%; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #10240a; border-color: var(--accent); font-weight: 600; }
+
+  .segmented { display: flex; gap: 6px; }
+  .segmented button { flex: 1; padding: 7px 4px; font-size: 13px; }
+  .segmented button[aria-pressed="true"] {
+    background: var(--panel-2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .switch input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .swatch { position: relative; }
+  .swatch button {
+    position: absolute; top: -7px; right: -7px;
+    width: 17px; height: 17px; padding: 0;
+    line-height: 1; font-size: 12px;
+    border-radius: 50%;
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+
+  .preview-wrap { position: relative; }
+  canvas {
+    width: 100%;
+    max-width: 100%;
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #000;
+  }
+  .hint { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+  pre {
+    margin: 0;
+    padding: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    tab-size: 4;
+  }
+  .status { color: var(--accent); font-size: 13px; min-height: 18px; margin-top: 8px; }
+  footer { padding: 0 24px 40px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--accent); }
+  video { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>cvflair <span>tema playground</span></h1>
+  <p>
+    Temayı burada ayarla, hazır <code>Theme(...)</code> kodunu kopyala.
+    Sayfa tamamen tarayıcıda çalışır: sunucu, hesap ve kayıt yok. Kamera açılırsa
+    görüntü hiçbir yere gönderilmez.
+    <a href="https://github.com/kbycode/cvflair">Depo</a> ·
+    <a href="https://pypi.org/project/cvflair/">PyPI</a>
+  </p>
+</header>
+
+<main>
+  <div>
+    <div class="panel">
+      <h2>Tema</h2>
+      <div class="row">
+        <select id="preset">
+          <option value="minimal">minimal</option>
+          <option value="neon" selected>neon</option>
+          <option value="pastel">pastel</option>
+          <option value="custom">özel</option>
+        </select>
+      </div>
+      <div class="row">
+        <label class="title">Renk paleti</label>
+        <div class="swatches" id="swatches"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Kutu</h2>
+      <div class="row">
+        <label class="title">Biçim</label>
+        <div class="segmented" id="boxStyle">
+          <button data-value="box" type="button">düz</button>
+          <button data-value="round" type="button">yuvarlak</button>
+          <button data-value="corner" type="button">köşe</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="title" for="thickness">Kalınlık <b id="thicknessOut"></b></label>
+        <input type="range" id="thickness" min="1" max="10" step="1">
+      </div>
+      <div class="row" data-only="round">
+        <label class="title" for="roundness">Yuvarlama <b id="roundnessOut"></b></label>
+        <input type="range" id="roundness" min="0.05" max="1" step="0.05">
+      </div>
+      <div class="row" data-only="corner">
+        <label class="title" for="cornerLength">Köşe uzunluğu <b id="cornerLengthOut"></b></label>
+        <input type="range" id="cornerLength" min="5" max="60" step="1">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Parlama</h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="glow"> Hâle çiz</label>
+      </div>
+      <div class="row" data-only="glow">
+        <label class="title" for="glowThickness">Hâle kalınlığı <b id="glowThicknessOut"></b></label>
+        <input type="range" id="glowThickness" min="1" max="20" step="1">
+      </div>
+      <div class="row" data-only="glow">
+        <label class="title" for="glowDim">Hâle koyuluğu <b id="glowDimOut"></b></label>
+        <input type="range" id="glowDim" min="0.1" max="0.9" step="0.05">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Etiket</h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="labels" checked> Etiket çiz</label>
+      </div>
+      <div class="row" data-only="labels">
+        <label class="title" for="textScale">Yazı ölçeği <b id="textScaleOut"></b></label>
+        <input type="range" id="textScale" min="0.3" max="1.2" step="0.05">
+      </div>
+      <div class="row" data-only="labels">
+        <label class="title" for="textPadding">İç boşluk <b id="textPaddingOut"></b></label>
+        <input type="range" id="textPadding" min="0" max="20" step="1">
+      </div>
+      <div class="row" data-only="labels">
+        <label class="title" for="labelRadius">Köşe yarıçapı <b id="labelRadiusOut"></b></label>
+        <input type="range" id="labelRadius" min="0" max="20" step="1">
+      </div>
+      <div class="row" data-only="labels">
+        <label class="title" for="textColor">Yazı rengi <b id="textColorOut"></b></label>
+        <input type="color" id="textColor">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Önizleme</h2>
+      <div class="preview-wrap">
+        <canvas id="canvas" width="880" height="495"></canvas>
+        <video id="video" playsinline muted></video>
+      </div>
+      <div class="actions">
+        <button id="toggleAnimation" type="button">Hareketi durdur</button>
+        <button id="toggleCamera" type="button">Kamerayı aç</button>
+        <button id="downloadPng" type="button">PNG indir</button>
+      </div>
+      <p class="hint">
+        Önizleme OpenCV çizimini yaklaşık taklit eder; yazı tipi tarayıcınınki olduğu
+        için etiket genişliği birebir aynı olmayabilir. Kamera modunda kutular
+        örnektir — tarayıcıda tespit çalışmaz, kutuları çizen model Python tarafında.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>Python kodu</h2>
+      <pre id="code"></pre>
+      <div class="actions">
+        <button class="primary" id="copyCode" type="button">Kodu kopyala</button>
+        <button id="copyLink" type="button">Bağlantıyı kopyala</button>
+        <button id="reset" type="button">Sıfırla</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  cvflair MIT lisanslı. Çizim motoru
+  <a href="https://github.com/roboflow/supervision">supervision</a>;
+  bu sayfa yalnızca tema ayarlarını üretir.
+</footer>
+
+<script>
+"use strict";
+
+// --- Temalar: src/cvflair/themes.py içindeki preset'lerin birebir karşılığı ---
+const PRESETS = {
+  minimal: {
+    palette: ["#ffffff"],
+    boxStyle: "box", thickness: 1, roundness: 0.5, cornerLength: 20,
+    glow: false, glowThickness: 5, glowDim: 0.45,
+    labels: true, textColor: "#000000", textScale: 0.45, textPadding: 4, labelRadius: 0,
+  },
+  neon: {
+    palette: ["#39ff14", "#ff00e5", "#00e5ff", "#ffe600", "#ff2d55", "#7b5cff"],
+    boxStyle: "round", thickness: 3, roundness: 0.6, cornerLength: 20,
+    glow: true, glowThickness: 6, glowDim: 0.4,
+    labels: true, textColor: "#000000", textScale: 0.5, textPadding: 8, labelRadius: 6,
+  },
+  pastel: {
+    palette: ["#ffadad", "#a0c4ff", "#b9fbc0", "#ffd6a5", "#cdb4db", "#9bf6ff"],
+    boxStyle: "round", thickness: 2, roundness: 0.8, cornerLength: 20,
+    glow: false, glowThickness: 5, glowDim: 0.45,
+    labels: true, textColor: "#2e2e2e", textScale: 0.45, textPadding: 8, labelRadius: 10,
+  },
+};
+
+// Theme dataclass varsayılanları: koda yalnızca bunlardan farklı olanlar yazılır.
+const DEFAULTS = {
+  boxStyle: "box", thickness: 2, roundness: 0.5, cornerLength: 20,
+  glow: false, glowThickness: 5, glowDim: 0.45,
+  labels: true, textColor: "#000000", textScale: 0.5, textPadding: 6, labelRadius: 0,
+};
+
+// URL kısaltmaları: yalnızca sayı, hex ve sabit sözcükler taşınır.
+const URL_KEYS = {
+  p: "palette", s: "boxStyle", t: "thickness", r: "roundness", c: "cornerLength",
+  g: "glow", gt: "glowThickness", gd: "glowDim",
+  l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
+};
+const BOX_STYLES = ["box", "round", "corner"];
+const MAX_COLORS = 8;
+
+const LABELS = ["kisi 0.94", "bisiklet 0.81", "kopek 0.66"];
+
+let state = structuredClone(PRESETS.neon);
+let preset = "neon";
+let animating = true;
+let cameraStream = null;
+let tick = 0;
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const video = document.getElementById("video");
+const statusEl = document.getElementById("status");
+
+// --- yardımcılar -----------------------------------------------------------
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+function isHex(value) {
+  return typeof value === "string" && /^#?[0-9a-fA-F]{6}$/.test(value);
+}
+
+function normaliseHex(value) {
+  return "#" + value.replace("#", "").toLowerCase();
+}
+
+function dim(hex, factor) {
+  const value = parseInt(hex.slice(1), 16);
+  const parts = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+  return "rgb(" + parts.map((c) => Math.round(c * factor)).join(",") + ")";
+}
+
+function setStatus(message) {
+  statusEl.textContent = message;
+  window.clearTimeout(setStatus.timer);
+  setStatus.timer = window.setTimeout(() => { statusEl.textContent = ""; }, 2600);
+}
+
+// --- durum <-> URL ---------------------------------------------------------
+
+function readUrl() {
+  const params = new URLSearchParams(location.search);
+  if (![...params.keys()].length) return;
+
+  const named = params.get("tema");
+  if (named && PRESETS[named]) {
+    state = structuredClone(PRESETS[named]);
+    preset = named;
+  }
+
+  for (const [key, field] of Object.entries(URL_KEYS)) {
+    if (!params.has(key)) continue;
+    const raw = params.get(key);
+    if (field === "palette") {
+      const colors = raw.split(",").filter(isHex).map(normaliseHex).slice(0, MAX_COLORS);
+      if (colors.length) state.palette = colors;
+    } else if (field === "boxStyle") {
+      if (BOX_STYLES.includes(raw)) state.boxStyle = raw;
+    } else if (field === "textColor") {
+      if (isHex(raw)) state.textColor = normaliseHex(raw);
+    } else if (field === "glow" || field === "labels") {
+      state[field] = raw === "1" || raw === "true";
+    } else {
+      const number = Number(raw);
+      if (Number.isFinite(number)) state[field] = number;
+    }
+  }
+  clampState();
+  if (!named) preset = matchPreset();
+}
+
+function clampState() {
+  state.thickness = clamp(Math.round(state.thickness), 1, 10);
+  state.roundness = clamp(state.roundness, 0.05, 1);
+  state.cornerLength = clamp(Math.round(state.cornerLength), 5, 60);
+  state.glowThickness = clamp(Math.round(state.glowThickness), 1, 20);
+  state.glowDim = clamp(state.glowDim, 0.1, 0.9);
+  state.textScale = clamp(state.textScale, 0.3, 1.2);
+  state.textPadding = clamp(Math.round(state.textPadding), 0, 20);
+  state.labelRadius = clamp(Math.round(state.labelRadius), 0, 20);
+  if (!state.palette.length) state.palette = ["#ffffff"];
+}
+
+function matchPreset() {
+  for (const [name, values] of Object.entries(PRESETS)) {
+    if (JSON.stringify(values) === JSON.stringify(state)) return name;
+  }
+  return "custom";
+}
+
+function shareUrl() {
+  const params = new URLSearchParams();
+  params.set("p", state.palette.map((c) => c.slice(1)).join(","));
+  params.set("s", state.boxStyle);
+  params.set("t", String(state.thickness));
+  if (state.boxStyle === "round") params.set("r", String(state.roundness));
+  if (state.boxStyle === "corner") params.set("c", String(state.cornerLength));
+  params.set("g", state.glow ? "1" : "0");
+  if (state.glow) {
+    params.set("gt", String(state.glowThickness));
+    params.set("gd", String(state.glowDim));
+  }
+  params.set("l", state.labels ? "1" : "0");
+  if (state.labels) {
+    params.set("tc", state.textColor.slice(1));
+    params.set("ts", String(state.textScale));
+    params.set("tp", String(state.textPadding));
+    params.set("lr", String(state.labelRadius));
+  }
+  return location.origin + location.pathname + "?" + params.toString();
+}
+
+// --- Python kodu -----------------------------------------------------------
+
+function pythonCode() {
+  const lines = [];
+  const colors = state.palette.map((c) => '"' + c.toUpperCase() + '"').join(", ");
+  lines.push('    name="playground",');
+  lines.push("    palette=sv.ColorPalette.from_hex([" + colors + "]),");
+
+  if (state.boxStyle !== DEFAULTS.boxStyle) lines.push('    box_style="' + state.boxStyle + '",');
+  if (state.thickness !== DEFAULTS.thickness) lines.push("    thickness=" + state.thickness + ",");
+  if (state.boxStyle === "round" && state.roundness !== DEFAULTS.roundness) {
+    lines.push("    roundness=" + state.roundness + ",");
+  }
+  if (state.boxStyle === "corner" && state.cornerLength !== DEFAULTS.cornerLength) {
+    lines.push("    corner_length=" + state.cornerLength + ",");
+  }
+  if (state.glow) {
+    lines.push("    glow=True,");
+    if (state.glowThickness !== DEFAULTS.glowThickness) {
+      lines.push("    glow_thickness=" + state.glowThickness + ",");
+    }
+    if (state.glowDim !== DEFAULTS.glowDim) lines.push("    glow_dim=" + state.glowDim + ",");
+  }
+  if (!state.labels) {
+    lines.push("    labels=False,");
+  } else {
+    if (state.textColor !== DEFAULTS.textColor) {
+      lines.push('    text_color=sv.Color.from_hex("' + state.textColor.toUpperCase() + '"),');
+    }
+    if (state.textScale !== DEFAULTS.textScale) lines.push("    text_scale=" + state.textScale + ",");
+    if (state.textPadding !== DEFAULTS.textPadding) {
+      lines.push("    text_padding=" + state.textPadding + ",");
+    }
+    if (state.labelRadius !== DEFAULTS.labelRadius) {
+      lines.push("    label_radius=" + state.labelRadius + ",");
+    }
+  }
+
+  return [
+    "import supervision as sv",
+    "from cvflair import Camera, Theme",
+    "",
+    "theme = Theme(",
+    ...lines,
+    ")",
+    "",
+    'cam = Camera(source=0, theme=theme)',
+    "for frame, detections in cam.stream(model=\"yolov8n.pt\"):",
+    "    cam.show(frame, detections)",
+  ].join("\n");
+}
+
+// --- çizim -----------------------------------------------------------------
+
+function roundedPath(x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function strokeBox(box, colour, thickness) {
+  const [x1, y1, x2, y2] = box;
+  const width = x2 - x1;
+  const height = y2 - y1;
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = thickness;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+
+  if (state.boxStyle === "round") {
+    roundedPath(x1, y1, width, height, state.roundness * Math.min(width, height) / 2);
+    ctx.stroke();
+    return;
+  }
+  if (state.boxStyle === "corner") {
+    const arm = Math.min(state.cornerLength, width / 2, height / 2);
+    ctx.beginPath();
+    for (const [cx, cy, dx, dy] of [
+      [x1, y1, 1, 1], [x2, y1, -1, 1], [x1, y2, 1, -1], [x2, y2, -1, -1],
+    ]) {
+      ctx.moveTo(cx + dx * arm, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * arm);
+    }
+    ctx.stroke();
+    return;
+  }
+  ctx.strokeRect(x1, y1, width, height);
+}
+
+function drawLabel(box, colour, text) {
+  const fontSize = Math.round(state.textScale * 30);
+  ctx.font = "600 " + fontSize + "px ui-sans-serif, system-ui, sans-serif";
+  const textWidth = ctx.measureText(text).width;
+  const boxWidth = textWidth + state.textPadding * 2;
+  const boxHeight = fontSize + state.textPadding * 2;
+  const x = box[0];
+  const y = Math.max(0, box[1] - boxHeight);
+
+  ctx.fillStyle = colour;
+  roundedPath(x, y, boxWidth, boxHeight, state.labelRadius);
+  ctx.fill();
+
+  ctx.fillStyle = state.textColor;
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + state.textPadding, y + boxHeight / 2 + 1);
+}
+
+function detections(width, height) {
+  const phase = animating ? tick / 60 : 0;
+  const wobble = (offset, amount) => Math.sin(phase + offset) * amount;
+  return [
+    [0.08 * width + wobble(0, 26), 0.22 * height, 0.34 * width + wobble(0, 26), 0.86 * height],
+    [0.42 * width, 0.34 * height + wobble(1.6, 22), 0.62 * width, 0.76 * height + wobble(1.6, 22)],
+    [0.70 * width + wobble(3.1, 14), 0.14 * height, 0.92 * width + wobble(3.1, 14), 0.58 * height],
+  ];
+}
+
+function drawScene(width, height) {
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#1a1c20");
+  gradient.addColorStop(1, "#33373f");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  for (const [x1, y1, x2, y2] of detections(width, height)) {
+    roundedPath(x1, y1, x2 - x1, y2 - y1, 14);
+    ctx.fill();
+  }
+}
+
+function render() {
+  const { width, height } = canvas;
+  if (cameraStream && video.readyState >= 2) {
+    ctx.drawImage(video, 0, 0, width, height);
+  } else {
+    drawScene(width, height);
+  }
+
+  detections(width, height).forEach((box, index) => {
+    const colour = state.palette[index % state.palette.length];
+    if (state.glow) strokeBox(box, dim(colour, state.glowDim), state.thickness + state.glowThickness);
+    strokeBox(box, colour, state.thickness);
+    if (state.labels) drawLabel(box, colour, LABELS[index % LABELS.length]);
+  });
+
+  if (animating) tick += 1;
+  requestAnimationFrame(render);
+}
+
+// --- arayüz ----------------------------------------------------------------
+
+const SLIDERS = [
+  "thickness", "roundness", "cornerLength",
+  "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius",
+];
+
+function syncControls() {
+  document.getElementById("preset").value = preset;
+
+  for (const id of SLIDERS) {
+    document.getElementById(id).value = state[id];
+    document.getElementById(id + "Out").textContent = state[id];
+  }
+  document.getElementById("glow").checked = state.glow;
+  document.getElementById("labels").checked = state.labels;
+  document.getElementById("textColor").value = state.textColor;
+  document.getElementById("textColorOut").textContent = state.textColor;
+
+  for (const button of document.querySelectorAll("#boxStyle button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.value === state.boxStyle));
+  }
+  for (const row of document.querySelectorAll("[data-only]")) {
+    const need = row.dataset.only;
+    const visible = need === "glow" ? state.glow
+      : need === "labels" ? state.labels
+      : state.boxStyle === need;
+    row.style.display = visible ? "" : "none";
+  }
+
+  renderSwatches();
+  document.getElementById("code").textContent = pythonCode();
+}
+
+function renderSwatches() {
+  const holder = document.getElementById("swatches");
+  holder.textContent = "";
+
+  state.palette.forEach((colour, index) => {
+    const wrap = document.createElement("span");
+    wrap.className = "swatch";
+
+    const input = document.createElement("input");
+    input.type = "color";
+    input.value = colour;
+    input.setAttribute("aria-label", (index + 1) + ". renk");
+    input.addEventListener("input", () => update(() => { state.palette[index] = input.value; }));
+    wrap.append(input);
+
+    if (state.palette.length > 1) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.title = "Rengi kaldır";
+      remove.addEventListener("click", () => update(() => { state.palette.splice(index, 1); }));
+      wrap.append(remove);
+    }
+    holder.append(wrap);
+  });
+
+  if (state.palette.length < MAX_COLORS) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = "+ renk";
+    add.addEventListener("click", () => update(() => {
+      state.palette.push(state.palette[state.palette.length - 1]);
+    }));
+    holder.append(add);
+  }
+}
+
+function update(mutate) {
+  mutate();
+  clampState();
+  preset = matchPreset();
+  syncControls();
+}
+
+function bindControls() {
+  document.getElementById("preset").addEventListener("change", (event) => {
+    const name = event.target.value;
+    if (PRESETS[name]) {
+      state = structuredClone(PRESETS[name]);
+      preset = name;
+      syncControls();
+    }
+  });
+
+  for (const id of SLIDERS) {
+    document.getElementById(id).addEventListener("input", (event) => {
+      update(() => { state[id] = Number(event.target.value); });
+    });
+  }
+  for (const id of ["glow", "labels"]) {
+    document.getElementById(id).addEventListener("change", (event) => {
+      update(() => { state[id] = event.target.checked; });
+    });
+  }
+  document.getElementById("textColor").addEventListener("input", (event) => {
+    update(() => { state.textColor = event.target.value; });
+  });
+  for (const button of document.querySelectorAll("#boxStyle button")) {
+    button.addEventListener("click", () => update(() => { state.boxStyle = button.dataset.value; }));
+  }
+
+  document.getElementById("toggleAnimation").addEventListener("click", (event) => {
+    animating = !animating;
+    event.target.textContent = animating ? "Hareketi durdur" : "Hareketi başlat";
+  });
+
+  document.getElementById("toggleCamera").addEventListener("click", toggleCamera);
+
+  document.getElementById("downloadPng").addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.download = "cvflair-tema.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+
+  document.getElementById("copyCode").addEventListener("click", () => {
+    copy(pythonCode(), "Kod kopyalandı.");
+  });
+  document.getElementById("copyLink").addEventListener("click", () => {
+    const url = shareUrl();
+    history.replaceState(null, "", url);
+    copy(url, "Bağlantı kopyalandı.");
+  });
+  document.getElementById("reset").addEventListener("click", () => {
+    state = structuredClone(PRESETS.neon);
+    preset = "neon";
+    history.replaceState(null, "", location.pathname);
+    syncControls();
+  });
+}
+
+async function copy(text, message) {
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus(message);
+  } catch {
+    setStatus("Kopyalanamadı — metni elle seçmek gerekiyor.");
+  }
+}
+
+async function toggleCamera(event) {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+    event.target.textContent = "Kamerayı aç";
+    return;
+  }
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    video.srcObject = cameraStream;
+    await video.play();
+    event.target.textContent = "Kamerayı kapat";
+    setStatus("Görüntü yalnızca bu sekmede işleniyor.");
+  } catch {
+    setStatus("Kameraya erişilemedi.");
+  }
+}
+
+readUrl();
+bindControls();
+syncControls();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

@@ -3,6 +3,15 @@
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdır.
 
+## Yayınlanmamış
+
+### Eklendi
+- [Tema playground](https://kbycode.github.io/cvflair/) (`docs/index.html`): temalar
+  tarayıcıda ayarlanıyor, hazır `Theme(...)` kodu kopyalanabiliyor. Sunucu, hesap ve
+  kayıt yok; ayarlar query string ile taşınıyor, isteğe bağlı kamera önizlemesi
+  görüntüyü sayfadan çıkarmıyor. Bağlantıdan gelen değerler yalnızca hex renk, sayı
+  ve sabit sözcük olarak kabul edilip aralığa kırpılıyor.
+
 ## 0.2.0
 
 ### Eklendi
