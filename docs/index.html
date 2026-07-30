@@ -367,8 +367,21 @@ const GROUND = 0.9;
 const FIGURE = "#98a1b2";
 const FIGURE_DARK = "#6c7488";
 
-let state = structuredClone(PRESETS.neon);
-let preset = "neon";
+// Sayfa açılışındaki ayar: neon paleti, kesikli köşe çerçevesi. Kutu ölçüleri
+// deneyerek seçildi; tek tek preset'lerden birine denk gelmediği için seçici
+// "özel" görünür.
+const DEFAULT_STATE = {
+  ...PRESETS.neon,
+  boxStyle: "dashed_corner",
+  thickness: 2,
+  cornerLength: 8,
+  dashLength: 5,
+  gapLength: 7,
+  accent: null,
+};
+
+let state = structuredClone(DEFAULT_STATE);
+let preset = "custom";
 let animating = true;
 let cameraStream = null;
 // Sahne saati saniye cinsinden ilerler; kare sayacı kullanılsaydı hareket hızı
@@ -1158,8 +1171,8 @@ function bindControls() {
     copy(url, "Bağlantı kopyalandı.");
   });
   document.getElementById("reset").addEventListener("click", () => {
-    state = structuredClone(PRESETS.neon);
-    preset = "neon";
+    state = structuredClone(DEFAULT_STATE);
+    preset = matchPreset();
     history.replaceState(null, "", location.pathname);
     syncControls();
   });

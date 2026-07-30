@@ -6,11 +6,12 @@ Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdı
 ## 0.4.0
 
 ### Belgeler
-- Demo GIF'i artık alacakaranlıkta bir sokak sahnesinde geçiyor: gökyüzü geçişi,
-  pencereleri yanan bina silüetleri, kaldırım ve yol. Figürler (yürüyen kişi, giden
-  bisiklet, koşan köpek) çiziliyor; kutular figürlerin gerçek sınırlarından
-  hesaplanıyor. `tools/make_demo_gif.py --background <görsel>` ile dışarıdan bir
-  arka plan da verilebiliyor.
+- Demo GIF'i artık gerçek bir sokak fotoğrafı (`docs/city.png`) üzerinde: kutular
+  görseldeki bisiklet, köpek ve yayanın üzerine oturuyor, kareden kareye hafifçe
+  oynuyor. `tools/make_demo_gif.py --background <görsel>` ile başka bir arka plan
+  verilebiliyor (kutu oranlarının yeniden ayarlanması gerekir).
+- Playground'un açılış ayarı: kesikli köşe çerçeve, kalınlık 2, köşe uzunluğu 8,
+  çizgi 5, boşluk 7. Demo GIF'i de aynı çerçeve ayarlarını kullanıyor.
 - Playground'un önizleme tuvali artık gösterildiği boyutta çiziliyor (devicePixelRatio
   dahil). Önceden sabit 880 px'lik tuval panele küçültülerek sığdırıldığı için etiket
   yazısı ekranda ~9 px'e düşüp okunmaz hâle geliyordu.

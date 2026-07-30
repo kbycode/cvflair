@@ -14,9 +14,8 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 
 ![cvflair demo](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/demo.gif)
 
-*Aynı tespitler, dört tema. Sahne ve figürler `tools/make_demo_gif.py` ile çiziliyor;
-kamera da hazır görsel de gerekmiyor. Kendi arka planını kullanmak için:
-`python tools/make_demo_gif.py --background docs/sokak.jpg`*
+*Aynı tespitler, dört tema. `tools/make_demo_gif.py` ile üretildi: `docs/city.png`
+üzerine çizilen kutular. Başka bir görsel için `--background <yol>`.*
 
 > **Durum:** kamera döngüsü, dört tema, sekiz çerçeve biçimi ve model bağlama hazır.
 > PyPI'da: [cvflair](https://pypi.org/project/cvflair/).
