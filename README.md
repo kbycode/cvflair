@@ -17,6 +17,12 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 *Aynı tespitler, dört tema. `tools/make_demo_gif.py` ile üretildi: `docs/city.png`
 üzerine çizilen kutular. Başka bir görsel için `--background <yol>`.*
 
+**Sekiz çerçeve biçimi, dört hazır tema — hepsi tek `Theme(...)` satırıyla.**
+Hiçbirini kurmadan denemek için: **[tema playground →](https://kbycode.github.io/cvflair/)**
+Ayarları oynat, hazır Python kodunu kopyala; sayfa tamamen tarayıcıda çalışır.
+
+![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
+
 > **Durum:** kamera döngüsü, dört tema, sekiz çerçeve biçimi ve model bağlama hazır.
 > PyPI'da: [cvflair](https://pypi.org/project/cvflair/).
 
@@ -129,9 +135,7 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 
 ### Çerçeve biçimleri
 
-![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
-
-`box_style` sekiz değerden birini alır:
+Görselleri yukarıda. `box_style` sekiz değerden birini alır:
 
 | Değer | Görünüm | Ayarları |
 |---|---|---|
@@ -241,8 +245,6 @@ Dokümantasyon görselleri de kamerasız üretilir:
 python tools/make_demo_gif.py    # docs/demo.gif
 python examples/theme_preview.py # examples/output/theme-*.png
 ```
-
-Yayın adımları: [docs/pypi-yayin-rehberi.md](docs/pypi-yayin-rehberi.md).
 
 ## Yol haritası
 
