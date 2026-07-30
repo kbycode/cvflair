@@ -15,8 +15,8 @@ from typing import Any, overload
 
 import cv2
 import numpy as np
-import supervision as sv
 
+from .detections import Detections
 from .models import ModelLike, resolve_detector
 from .themes import Theme, get_theme
 
@@ -194,7 +194,7 @@ class Camera:
     @overload
     def stream(
         self, timeout: float = ..., *, model: ModelLike
-    ) -> Iterator[tuple[np.ndarray, sv.Detections]]: ...
+    ) -> Iterator[tuple[np.ndarray, Detections]]: ...
 
     def stream(self, timeout: float = 5.0, *, model: ModelLike | None = None):
         """
@@ -202,7 +202,7 @@ class Camera:
         frame arrives within ``timeout`` seconds. Releases the device on exit.
 
         Without ``model`` the frames come through bare. With one -- a weights
-        path, an Ultralytics model, or any callable returning ``sv.Detections``
+        path, an Ultralytics model, or any callable returning detections
         -- each item is a ``(frame, detections)`` pair::
 
             for frame, detections in cam.stream(model="yolov8n.pt"):
@@ -228,7 +228,7 @@ class Camera:
     def annotate(
         self,
         frame: np.ndarray,
-        detections: sv.Detections | None = None,
+        detections: Detections | None = None,
         labels: Sequence[str] | None = None,
     ) -> np.ndarray:
         """Apply the active theme in place. Useful when not using :meth:`show`."""
@@ -239,7 +239,7 @@ class Camera:
     def show(
         self,
         frame: np.ndarray,
-        detections: sv.Detections | None = None,
+        detections: Detections | None = None,
         labels: Sequence[str] | None = None,
         *,
         wait: int = 1,

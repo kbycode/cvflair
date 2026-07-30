@@ -8,22 +8,21 @@
 
 Bilgisayarlı görü tespitlerini üç satırda, hazır temalarla ekrana çizen ince bir katman.
 
-Çizim işini [supervision](https://github.com/roboflow/supervision) yapar; cvflair kamera
-döngüsünü ve tema ayarlarını üstlenir. Model bağımsızdır: `supervision`'ın `Detections`
-nesnesini üreten her kaynak (YOLO, MediaPipe, InsightFace veya özel bir model) tema
-tarafından çizilebilir.
+Kamera döngüsü, temalar ve çizim tek pakette; **numpy ve opencv dışında bağımlılığı
+yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightFace veya
+özel bir model) aynı temayla çizilir.
 
 ![cvflair demo](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/demo.gif)
 
 *Aynı tespitler, üç tema. Animasyon `tools/make_demo_gif.py` ile üretildi — sentetik
 sahne, kamera gerekmiyor.*
 
-> **Durum:** Faz 1 tamam (kamera döngüsü, üç tema, testler), Faz 2 başladı (model
-> bağlama). İlk sürüm PyPI'da: [cvflair 0.2.0](https://pypi.org/project/cvflair/).
+> **Durum:** kamera döngüsü, dört tema, sekiz çerçeve biçimi ve model bağlama hazır.
+> PyPI'da: [cvflair](https://pypi.org/project/cvflair/).
 
 ## Kurulum
 
-Python 3.10 veya üzeri gerekir (bu alt sınır `supervision`'dan geliyor).
+Python 3.10 veya üzeri gerekir.
 
 ```bash
 pip install cvflair
@@ -81,22 +80,24 @@ for frame, detections in cam.stream(model="yolov8n.pt"):
 |---|---|
 | `"yolov8n.pt"` (ağırlık yolu) | Ultralytics ile yüklenir — `cvflair[yolo]` gerekir |
 | Hazır bir Ultralytics modeli | `YOLO(...)` nesnesi doğrudan verilebilir, çıktısı dönüştürülür |
-| Herhangi bir çağrılabilir | `sv.Detections` döndüren herhangi bir fonksiyon — MediaPipe, InsightFace, özel model |
+| Herhangi bir çağrılabilir | Kutu döndüren herhangi bir fonksiyon — MediaPipe, InsightFace, özel model |
 
 Son seçenek kütüphaneyi model-agnostik yapan yer:
 
 ```python
-import supervision as sv
-from cvflair import Camera
+from cvflair import Camera, Detections
 
-def detect(frame) -> sv.Detections:
+def detect(frame) -> Detections:
     ...  # özel model çağrısı
-    return sv.Detections(xyxy=..., class_id=..., confidence=...)
+    return Detections(xyxy=[[10, 20, 120, 260]], class_id=[0], names=["kisi"])
 
 cam = Camera(source=0, theme="pastel")
 for frame, detections in cam.stream(model=detect):
     cam.show(frame, detections)
 ```
+
+Elde `supervision` varsa onun `Detections` nesnesi de doğrudan verilebilir; cvflair
+alan adlarına göre okur, dönüştürme gerekmez.
 
 Çıkarım bu döngüde çalışır, okuma thread'inde değil: bir kare işlenirken okuyucu
 kuyruktaki kareyi tazelemeye devam eder, dolayısıyla bir sonraki tur birikmiş
@@ -143,10 +144,8 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 | `crosshair` | kenar ortası çentikleri + merkez artısı | `arm_length`, `center_size` |
 | `target` | ince çerçeve + kalın köşeler | `corner_length`, `edge_thickness` |
 
-İlk üçü doğrudan `supervision` annotator'larıdır. Kalan dördü `cvflair.annotators`
-içinde tanımlıdır: `supervision`'ın `BaseAnnotator` arayüzünü ve renk çözümlemesini
-kullanırlar, yani palet ve `ColorLookup` davranışı aynıdır — yalnızca çizgi geometrisi
-farklıdır.
+Hepsi `cvflair.annotators` içinde, OpenCV çizim çağrılarıyla tanımlıdır; renk
+paleti ve `ColorLookup` davranışı sekizinde de aynıdır.
 
 `dashed_corner`, `bracket`, `crosshair` ve `target` ikinci bir renk kabul eder; köşe
 ayraçları, dirsekler ve merkez artısı o renge geçer — hibrit biçimlerin iki katmanı
@@ -154,8 +153,8 @@ böyle ayrışır:
 
 ```python
 theme = Theme(
-    palette=sv.ColorPalette.from_hex(["#00F0FF"]),
-    accent_palette=sv.ColorPalette.from_hex(["#FF206E"]),
+    palette=["#00F0FF"],
+    accent_palette="#FF206E",
     box_style="target",
     thickness=3,
 )
@@ -166,12 +165,11 @@ Yol haritasındaki `hud` teması (FPS/skor paneli) Faz 3'te gelecek.
 Özel bir tema, `Theme` doğrudan kurulup `Camera`'ya verilerek tanımlanır:
 
 ```python
-import supervision as sv
 from cvflair import Camera, Theme
 
 my_theme = Theme(
     name="my-theme",
-    palette=sv.ColorPalette.from_hex(["#39FF14", "#FF00E5"]),
+    palette=["#39FF14", "#FF00E5"],
     box_style="corner",     # bkz. Çerçeve biçimleri
     thickness=2,
     glow=True,
@@ -204,7 +202,8 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 | `cam.theme` | Okunur/yazılır; `cam.theme = "minimal"` çalışır |
 | `cam.frames_read` / `cam.frames_dropped` | Okunan ve tüketici yetişemediği için atılan kare sayısı |
 | `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
-| `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `sv.Detections`'a çevirir; `conf`, `iou`, `device` gibi ayarları taşır |
+| `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı; `from_ultralytics` ve `from_arrays` yardımcılarıyla |
+| `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir; `conf`, `iou`, `device` gibi ayarları taşır |
 | `resolve_detector(model)` | Ağırlık yolu / model / çağrılabilir → detektör; `stream()` bunu kullanır |
 
 `Camera` bağlam yöneticisi olarak da kullanılabilir: `with Camera() as cam: ...`
@@ -215,13 +214,11 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 - **Kuyruk tek slotlu.** Yeni kare gelince bekleyen eski kare düşürülür
   (`frames_dropped` ile sayılır). Böylece işleme yavaşladığında gecikme birikmez;
   ekranda hep en güncel kare olur.
-- **Annotator'lar bir kere kurulur.** `Theme` nesnesi oluşturulurken `supervision`
-  annotator'ları hazırlanır ve her karede yeniden kullanılır — döngü içinde annotator
+- **Annotator'lar bir kere kurulur.** `Theme` nesnesi oluşturulurken çizim
+  nesneleri hazırlanır ve her karede yeniden kullanılır — döngü içinde annotator
   kurmak bu tür işlerde en sık görülen gereksiz maliyettir.
-- **Çizim büyük ölçüde `supervision`'a ait.** Kutu, yuvarlak kutu, köşe ve etiket
-  çizimi doğrudan oradan geliyor. `dashed`, `bracket`, `crosshair` ve `target`
-  biçimleri `supervision`'da yok; onlar cvflair'de, ama yine `BaseAnnotator`
-  arayüzü ve aynı renk çözümlemesi üzerinden.
+- **Bağımlılık yüzeyi kasten dar.** Yalnızca numpy ve opencv. `import cvflair`
+  ~0.3 saniye sürüyor; kurulum ~170 MB (neredeyse tamamı opencv + numpy).
 - **Model paketin dışında.** `stream(model=...)` verilen şeyi bir çağrılabilire çevirir;
   ağırlıklar ilk yinelemede yüklenir. Hiçbir model kodu veya ağırlığı pakete gömülü değil.
 
@@ -258,8 +255,8 @@ Yayın adımları: [docs/pypi-yayin-rehberi.md](docs/pypi-yayin-rehberi.md).
 
 ## Lisans
 
-MIT — bkz. [LICENSE](LICENSE). Bağımlılıkların hepsi izin verici lisanslı
-(`supervision` MIT, `opencv-python` Apache 2.0, `numpy` BSD).
+MIT — bkz. [LICENSE](LICENSE). Bağımlılıkların ikisi de izin verici lisanslı
+(`opencv-python` Apache 2.0, `numpy` BSD).
 
 YOLO ağırlıkları veya Ultralytics kodu bu pakete gömülü değildir; Ultralytics'in
 kullanılması hâlinde AGPL-3.0 koşulları onu kullanan projenin sorumluluğundadır.

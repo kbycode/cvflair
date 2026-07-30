@@ -9,14 +9,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import supervision as sv
 
-from cvflair import available_themes, get_theme
+from cvflair import Detections, available_themes, get_theme
 
 OUTPUT_DIR = Path(__file__).parent / "output"
 
 # Tespit üreten bir model yerine sabit kutular: amaç temanın görünümü.
-DETECTIONS = sv.Detections(
+DETECTIONS = Detections(
     xyxy=np.array(
         [[60, 90, 300, 380], [340, 140, 560, 330], [600, 60, 760, 260]], dtype=np.float32
     ),

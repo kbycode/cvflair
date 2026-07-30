@@ -15,10 +15,9 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import supervision as sv
 from PIL import Image
 
-from cvflair import available_themes, get_theme
+from cvflair import Detections, available_themes, get_theme
 
 OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "demo.gif"
 WIDTH, HEIGHT = 480, 270
@@ -77,7 +76,7 @@ def main() -> None:
                 [0.90 + 0.08 * math.sin(tick / 5), 0.70 + 0.20 * math.sin(tick / 3)],
                 dtype=np.float32,
             )
-            detections = sv.Detections(
+            detections = Detections(
                 xyxy=np.vstack([person, ball]).astype(np.float32),
                 class_id=np.array([0, 1]),
                 confidence=confidence,

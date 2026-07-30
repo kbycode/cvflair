@@ -1,30 +1,32 @@
 """
-Visual themes -- a thin configuration layer over ``supervision`` annotators.
+Visual themes -- the settings bundle behind every drawn frame.
 
-A :class:`Theme` holds nothing but presentation settings plus the annotator
-instances built from them. Annotators are created once, when the theme is
-constructed, and reused for every frame; rebuilding them inside the capture
-loop is the most common avoidable cost in this kind of pipeline.
-
-No drawing maths lives here. Every pixel is still produced by ``supervision``.
+A :class:`Theme` holds presentation settings plus the annotator instances built
+from them. Annotators are created once, when the theme is constructed, and
+reused for every frame; rebuilding them inside the capture loop is the most
+common avoidable cost in this kind of pipeline.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
-import supervision as sv
 
 from .annotators import (
+    BoxAnnotator,
+    BoxCornerAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    LabelAnnotator,
+    RoundBoxAnnotator,
     TargetBoxAnnotator,
 )
+from .colors import Color, ColorLookup, ColorPalette, resolve_palette
 
 __all__ = ["Theme", "get_theme", "available_themes", "BoxStyle", "BOX_STYLES"]
 
@@ -32,72 +34,57 @@ BoxStyle = Literal[
     "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target"
 ]
 
-#: Every accepted ``box_style``. The first three come from ``supervision``, the
-#: rest from :mod:`cvflair.annotators`.
+#: Every accepted ``box_style``.
 BOX_STYLES: tuple[str, ...] = (
     "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
 )
 
 
-def _dim(color: sv.Color, factor: float) -> sv.Color:
-    """Return a darker copy of ``color`` (used for the neon halo pass)."""
-    return sv.Color(
-        r=int(color.r * factor),
-        g=int(color.g * factor),
-        b=int(color.b * factor),
-    )
-
-
-def _dim_palette(palette: sv.ColorPalette, factor: float) -> sv.ColorPalette:
-    return sv.ColorPalette([_dim(color, factor) for color in palette.colors])
-
-
 @dataclass
 class Theme:
     """
-    A named bundle of annotator settings.
+    A named bundle of drawing settings.
 
-    The defaults describe a plain white box with a plain label; the shipped
-    presets (see :func:`get_theme`) are just different field values, which is
-    also how a user-defined theme is written::
+    Colours are written the short way -- ``palette=["#39FF14", "#FF00E5"]``,
+    ``text_color="#101010"`` -- but a :class:`~cvflair.colors.ColorPalette`, a
+    single :class:`~cvflair.colors.Color`, or a ``supervision`` palette are all
+    accepted too.
 
-        Theme(name="my-theme", palette=sv.ColorPalette.from_hex(["#39FF14"]),
-              box_style="round", thickness=3)
-
-    Attributes are read at construction time only. Changing a field afterwards
-    does not rebuild the annotators -- construct a new theme instead.
+    Fields are read at construction time only. Changing one afterwards does not
+    rebuild the annotators -- construct a new theme instead.
     """
 
     name: str = "custom"
-    palette: sv.ColorPalette = field(default_factory=lambda: sv.ColorPalette.DEFAULT)
-    #: Second colour for the parts meant to stand out: bracket elbows, the
-    #: reticle centre, target corners. ``None`` keeps everything one colour.
-    accent_palette: sv.ColorPalette | None = None
+    palette: Any = field(default_factory=lambda: ColorPalette.DEFAULT)
+    #: Second colour for the parts meant to stand out: corner brackets, bracket
+    #: elbows, the reticle centre. ``None`` keeps everything one colour.
+    accent_palette: Any = None
     box_style: BoxStyle = "box"
     thickness: int = 2
-    #: Corner rounding for ``box_style="round"`` and ``"bracket"``, in (0, 1].
+    #: Corner rounding for ``"round"`` and ``"bracket"``, in (0, 1].
     roundness: float = 0.5
-    #: Corner arm length in pixels for ``"corner"``, ``"bracket"`` and ``"target"``.
+    #: Corner arm length in pixels for ``"corner"``, ``"dashed_corner"``,
+    #: ``"bracket"`` and ``"target"``.
     corner_length: int = 20
-    #: Dash geometry for ``box_style="dashed"``.
+    #: Dash geometry for ``"dashed"`` and ``"dashed_corner"``.
     dash_length: int = 12
     gap_length: int = 8
-    #: Reticle geometry for ``box_style="crosshair"``.
+    #: Reticle geometry for ``"crosshair"``.
     arm_length: int = 18
     center_size: int = 10
-    #: Rectangle weight behind the corners of ``box_style="target"``.
+    #: Rectangle weight behind the corners of ``"target"``.
     edge_thickness: int = 1
-    #: Draw a dimmed, thicker box behind the main one to fake a glow.
+    #: Draw a dimmed, thicker outline behind the main one to fake a glow.
     glow: bool = False
     glow_thickness: int = 5
     glow_dim: float = 0.45
     labels: bool = True
-    text_color: sv.Color = field(default_factory=lambda: sv.Color.BLACK)
+    text_color: Any = field(default_factory=lambda: Color.BLACK)
     text_scale: float = 0.5
     text_thickness: int = 1
     text_padding: int = 6
     label_radius: int = 0
-    color_lookup: sv.ColorLookup = sv.ColorLookup.CLASS
+    color_lookup: ColorLookup = ColorLookup.CLASS
 
     def __post_init__(self) -> None:
         if self.box_style not in BOX_STYLES:
@@ -109,12 +96,17 @@ class Theme:
         if not 0.0 < self.roundness <= 1.0:
             raise ValueError(f"roundness must be in (0, 1], got {self.roundness}.")
 
+        self.palette = resolve_palette(self.palette)
+        if self.accent_palette is not None:
+            self.accent_palette = resolve_palette(self.accent_palette)
+        self.text_color = resolve_palette(self.text_color).colors[0]
+
         self._glow_annotator = (
             self._build_box_annotator(
-                palette=_dim_palette(self.palette, self.glow_dim),
+                palette=self.palette.dim(self.glow_dim),
                 thickness=self.thickness + self.glow_thickness,
                 accent=(
-                    _dim_palette(self.accent_palette, self.glow_dim)
+                    self.accent_palette.dim(self.glow_dim)
                     if self.accent_palette is not None
                     else None
                 ),
@@ -128,7 +120,7 @@ class Theme:
             accent=self.accent_palette,
         )
         self._label_annotator = (
-            sv.LabelAnnotator(
+            LabelAnnotator(
                 color=self.palette,
                 text_color=self.text_color,
                 text_scale=self.text_scale,
@@ -143,16 +135,16 @@ class Theme:
 
     def _build_box_annotator(
         self,
-        palette: sv.ColorPalette,
+        palette: ColorPalette,
         thickness: int,
-        accent: sv.ColorPalette | None = None,
+        accent: ColorPalette | None = None,
     ):
         common = {"color": palette, "thickness": thickness, "color_lookup": self.color_lookup}
 
         if self.box_style == "round":
-            return sv.RoundBoxAnnotator(**common, roundness=self.roundness)
+            return RoundBoxAnnotator(**common, roundness=self.roundness)
         if self.box_style == "corner":
-            return sv.BoxCornerAnnotator(**common, corner_length=self.corner_length)
+            return BoxCornerAnnotator(**common, corner_length=self.corner_length)
         if self.box_style == "dashed":
             return DashedBoxAnnotator(
                 **common,
@@ -189,28 +181,27 @@ class Theme:
                 corner_length=self.corner_length,
                 edge_thickness=self.edge_thickness,
             )
-        return sv.BoxAnnotator(**common)
+        return BoxAnnotator(**common)
 
     def annotate(
         self,
         scene: np.ndarray,
-        detections: sv.Detections,
+        detections: Any,
         labels: Sequence[str] | None = None,
     ) -> np.ndarray:
         """
         Draw ``detections`` onto ``scene`` in place and return the same array.
 
-        ``labels`` is passed straight through to ``supervision``: when it is
-        ``None`` the label text falls back to the detections' ``class_name``
-        data field, then to the class id.
+        ``detections`` is cvflair's :class:`~cvflair.detections.Detections`, a
+        ``supervision.Detections``, or anything carrying the same fields.
         """
         if len(detections) == 0:
             return scene
         if self._glow_annotator is not None:
-            self._glow_annotator.annotate(scene=scene, detections=detections)
-        self._box_annotator.annotate(scene=scene, detections=detections)
+            self._glow_annotator.annotate(scene, detections)
+        self._box_annotator.annotate(scene, detections)
         if self._label_annotator is not None:
-            self._label_annotator.annotate(scene=scene, detections=detections, labels=labels)
+            self._label_annotator.annotate(scene, detections, labels=labels)
         return scene
 
 
@@ -218,10 +209,10 @@ def _minimal() -> Theme:
     """Thin single-colour box, plain label. Reads well in a screen recording."""
     return Theme(
         name="minimal",
-        palette=sv.ColorPalette([sv.Color.WHITE]),
+        palette=["#FFFFFF"],
         box_style="box",
         thickness=1,
-        text_color=sv.Color.BLACK,
+        text_color="#000000",
         text_scale=0.45,
         text_padding=4,
     )
@@ -231,16 +222,14 @@ def _neon() -> Theme:
     """Saturated per-class colours, rounded box, dimmed halo behind it."""
     return Theme(
         name="neon",
-        palette=sv.ColorPalette.from_hex(
-            ["#39FF14", "#FF00E5", "#00E5FF", "#FFE600", "#FF2D55", "#7B5CFF"]
-        ),
+        palette=["#39FF14", "#FF00E5", "#00E5FF", "#FFE600", "#FF2D55", "#7B5CFF"],
         box_style="round",
         thickness=3,
         roundness=0.6,
         glow=True,
         glow_thickness=6,
         glow_dim=0.4,
-        text_color=sv.Color.BLACK,
+        text_color="#000000",
         text_scale=0.5,
         text_padding=8,
         label_radius=6,
@@ -251,13 +240,11 @@ def _pastel() -> Theme:
     """Soft tones, generous rounding, dark text. Easy on a projector."""
     return Theme(
         name="pastel",
-        palette=sv.ColorPalette.from_hex(
-            ["#FFADAD", "#A0C4FF", "#B9FBC0", "#FFD6A5", "#CDB4DB", "#9BF6FF"]
-        ),
+        palette=["#FFADAD", "#A0C4FF", "#B9FBC0", "#FFD6A5", "#CDB4DB", "#9BF6FF"],
         box_style="round",
         thickness=2,
         roundness=0.8,
-        text_color=sv.Color.from_hex("#2E2E2E"),
+        text_color="#2E2E2E",
         text_scale=0.45,
         text_padding=8,
         label_radius=10,
@@ -268,13 +255,13 @@ def _cyberpunk() -> Theme:
     """High contrast target lock: thin rectangle, heavy white corners."""
     return Theme(
         name="cyberpunk",
-        palette=sv.ColorPalette.from_hex(["#00F0FF", "#FF206E", "#FFD400", "#8AFF00"]),
-        accent_palette=sv.ColorPalette.from_hex(["#FFFFFF"]),
+        palette=["#00F0FF", "#FF206E", "#FFD400", "#8AFF00"],
+        accent_palette="#FFFFFF",
         box_style="target",
         thickness=3,
         corner_length=26,
         edge_thickness=1,
-        text_color=sv.Color.BLACK,
+        text_color="#000000",
         text_scale=0.45,
         text_padding=6,
     )

@@ -1,40 +1,57 @@
 """
 cvflair -- theme-based visualisation for computer vision detections.
 
-The package draws nothing itself: it configures ``supervision`` annotators and
-wraps the camera loop, so the everyday case fits in three lines::
+Numpy and OpenCV are the only dependencies. The camera loop, the themes and the
+drawing all live here, so the everyday case fits in three lines::
 
     from cvflair import Camera
 
     cam = Camera(source=0, theme="neon")
-    for frame in cam.stream():
-        cam.show(frame)
+    for frame, detections in cam.stream(model="yolov8n.pt"):
+        cam.show(frame, detections)
+
+Detections may be cvflair's own :class:`~cvflair.detections.Detections`, a
+``supervision.Detections``, or any object carrying the same fields.
 """
 
 from __future__ import annotations
 
 from .annotators import (
+    BoxAnnotator,
+    BoxCornerAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    LabelAnnotator,
+    RoundBoxAnnotator,
     TargetBoxAnnotator,
 )
 from .camera import Camera, CameraError
+from .colors import Color, ColorLookup, ColorPalette
+from .detections import Detections
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "BOX_STYLES",
+    "BoxAnnotator",
+    "BoxCornerAnnotator",
     "BracketBoxAnnotator",
     "Camera",
     "CameraError",
+    "Color",
+    "ColorLookup",
+    "ColorPalette",
     "CrosshairAnnotator",
     "DashedBoxAnnotator",
     "DashedCornerAnnotator",
+    "Detections",
     "Detector",
+    "LabelAnnotator",
+    "RoundBoxAnnotator",
     "TargetBoxAnnotator",
     "Theme",
     "UltralyticsDetector",

@@ -302,9 +302,9 @@
 </main>
 
 <footer>
-  cvflair MIT lisanslı. Çizim motoru
-  <a href="https://github.com/roboflow/supervision">supervision</a>;
-  bu sayfa yalnızca tema ayarlarını üretir.
+  cvflair MIT lisanslı; numpy ve opencv dışında bağımlılığı yok. Bu sayfa yalnızca
+  tema ayarlarını üretir —
+  <a href="https://github.com/kbycode/cvflair">kaynak kodu</a>.
 </footer>
 
 <script>
@@ -506,11 +506,9 @@ function pythonCode() {
   const lines = [];
   const colors = state.palette.map((c) => '"' + c.toUpperCase() + '"').join(", ");
   lines.push('    name="playground",');
-  lines.push("    palette=sv.ColorPalette.from_hex([" + colors + "]),");
+  lines.push("    palette=[" + colors + "],");
   if (usesAccent()) {
-    lines.push(
-      '    accent_palette=sv.ColorPalette.from_hex(["' + state.accent.toUpperCase() + '"]),'
-    );
+    lines.push('    accent_palette="' + state.accent.toUpperCase() + '",');
   }
 
   if (state.boxStyle !== DEFAULTS.boxStyle) lines.push('    box_style="' + state.boxStyle + '",');
@@ -551,7 +549,7 @@ function pythonCode() {
     lines.push("    labels=False,");
   } else {
     if (state.textColor !== DEFAULTS.textColor) {
-      lines.push('    text_color=sv.Color.from_hex("' + state.textColor.toUpperCase() + '"),');
+      lines.push('    text_color="' + state.textColor.toUpperCase() + '",');
     }
     if (state.textScale !== DEFAULTS.textScale) lines.push("    text_scale=" + state.textScale + ",");
     if (state.textPadding !== DEFAULTS.textPadding) {
@@ -563,7 +561,6 @@ function pythonCode() {
   }
 
   return [
-    "import supervision as sv",
     "from cvflair import Camera, Theme",
     "",
     "theme = Theme(",

@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-import supervision as sv
 from conftest import FRAME_SHAPE
 
-from cvflair import Theme, available_themes, get_theme
+from cvflair import ColorPalette, Detections, Theme, available_themes, get_theme
 from cvflair.annotators import (
+    BoxAnnotator,
+    BoxCornerAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    RoundBoxAnnotator,
     TargetBoxAnnotator,
 )
 from cvflair.themes import BOX_STYLES
@@ -66,9 +68,9 @@ def test_theme_rejects_non_string():
 @pytest.mark.parametrize(
     ("box_style", "annotator_type"),
     [
-        ("box", sv.BoxAnnotator),
-        ("round", sv.RoundBoxAnnotator),
-        ("corner", sv.BoxCornerAnnotator),
+        ("box", BoxAnnotator),
+        ("round", RoundBoxAnnotator),
+        ("corner", BoxCornerAnnotator),
         ("dashed", DashedBoxAnnotator),
         ("dashed_corner", DashedCornerAnnotator),
         ("bracket", BracketBoxAnnotator),
@@ -91,7 +93,7 @@ def test_every_box_style_draws(box_style, detections):
 
 
 def test_accent_palette_reaches_the_annotator():
-    accent = sv.ColorPalette.from_hex(["#FFFFFF"])
+    accent = ColorPalette.from_hex(["#FFFFFF"])
     theme = Theme(box_style="target", accent_palette=accent)
 
     assert theme._box_annotator.accent_color is accent
@@ -100,7 +102,7 @@ def test_accent_palette_reaches_the_annotator():
 def test_glow_dims_the_accent_too():
     theme = Theme(
         box_style="target",
-        accent_palette=sv.ColorPalette.from_hex(["#FFFFFF"]),
+        accent_palette=ColorPalette.from_hex(["#FFFFFF"]),
         glow=True,
         glow_dim=0.5,
     )
@@ -148,7 +150,7 @@ def test_annotate_draws_in_place(detections):
 def test_empty_detections_leave_the_frame_alone():
     frame = blank()
 
-    get_theme("neon").annotate(frame, sv.Detections.empty())
+    get_theme("neon").annotate(frame, Detections.empty())
 
     assert painted_pixels(frame) == 0
 

@@ -6,9 +6,8 @@ import time
 
 import numpy as np
 import pytest
-import supervision as sv
 
-from cvflair import Camera
+from cvflair import Camera, Detections
 
 FRAME_SHAPE = (120, 160, 3)
 
@@ -81,9 +80,10 @@ def camera_factory():
 
 
 @pytest.fixture
-def detections() -> sv.Detections:
-    return sv.Detections(
+def detections() -> Detections:
+    return Detections(
         xyxy=np.array([[20, 20, 90, 80], [100, 30, 150, 100]], dtype=np.float32),
         class_id=np.array([0, 1]),
         confidence=np.array([0.9, 0.7], dtype=np.float32),
+        names=np.array(["kisi", "kopek"], dtype=object),
     )

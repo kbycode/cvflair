@@ -11,19 +11,18 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import supervision as sv
 
-from cvflair import Theme
+from cvflair import Detections, Theme
 from cvflair.themes import BOX_STYLES
 
 OUTPUT = Path(__file__).resolve().parents[1] / "docs" / "box-styles.png"
 CELL_W, CELL_H = 300, 200
 COLUMNS = 4
 
-BASE = sv.ColorPalette.from_hex(["#00F0FF"])
-ACCENT = sv.ColorPalette.from_hex(["#FF206E"])
+BASE = ["#00F0FF"]
+ACCENT = ["#FF206E"]
 
-DETECTIONS = sv.Detections(
+DETECTIONS = Detections(
     xyxy=np.array([[45, 55, 195, 165]], dtype=np.float32),
     class_id=np.array([0]),
     confidence=np.array([0.92], dtype=np.float32),
@@ -39,7 +38,7 @@ def cell(style: str, accent: bool) -> np.ndarray:
         accent_palette=ACCENT if accent else None,
         box_style=style,
         thickness=3,
-        text_color=sv.Color.BLACK,
+        text_color="#000000",
         text_scale=0.4,
         text_padding=5,
     )

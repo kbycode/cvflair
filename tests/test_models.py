@@ -2,8 +2,7 @@
 Model binding tests.
 
 The Ultralytics path is exercised with a stand-in Results object, so the real
-``sv.Detections.from_ultralytics`` conversion is covered without pulling in
-torch or downloading weights.
+conversion is covered without pulling in torch or downloading weights.
 """
 
 from __future__ import annotations
@@ -12,9 +11,9 @@ import importlib.util
 
 import numpy as np
 import pytest
-import supervision as sv
 from conftest import FRAME_SHAPE, make_frame
 
+from cvflair import Detections
 from cvflair.models import UltralyticsDetector, load_ultralytics, resolve_detector
 
 ULTRALYTICS_INSTALLED = importlib.util.find_spec("ultralytics") is not None
@@ -83,7 +82,7 @@ def test_callable_returning_detections_is_used(detections):
 def test_callable_returning_something_else_fails_clearly():
     detector = resolve_detector(lambda frame: "kutular")
 
-    with pytest.raises(TypeError, match="expected supervision.Detections"):
+    with pytest.raises(TypeError, match="expected detections"):
         detector(make_frame(1))
 
 
@@ -108,11 +107,11 @@ def test_ultralytics_results_are_converted():
 
     detections = detector(make_frame(1))
 
-    assert isinstance(detections, sv.Detections)
+    assert isinstance(detections, Detections)
     assert len(detections) == 2
     assert detections.xyxy[0].tolist() == [10.0, 20.0, 60.0, 90.0]
     assert detections.class_id.tolist() == [0, 1]
-    assert list(detections.data["class_name"]) == ["kisi", "top"]
+    assert list(detections.names) == ["kisi", "top"]
 
 
 def test_predict_kwargs_reach_the_model():

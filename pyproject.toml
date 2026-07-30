@@ -32,9 +32,6 @@ classifiers = [
 dependencies = [
     "numpy>=1.24",
     "opencv-python>=4.8",
-    # supervision does the drawing; its annotator API still moves between
-    # minor releases, so the range stays narrow on purpose.
-    "supervision>=0.28,<0.30",
 ]
 
 [project.optional-dependencies]
@@ -44,7 +41,8 @@ yolo = ["ultralytics>=8.2"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
-    "pillow>=10.0",  # tools/make_demo_gif.py, sadece dokümantasyon çıktısı için
+    "pillow>=10.0",       # tools/make_demo_gif.py, sadece dokümantasyon çıktısı için
+    "supervision>=0.28",  # yalnızca uyumluluk testleri için; paket buna bağımlı değil
 ]
 release = [
     "build>=1.2",

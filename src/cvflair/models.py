@@ -2,12 +2,12 @@
 Optional model binding.
 
 cvflair ships no model and depends on none. This module only turns whatever was
-passed as ``model`` into a callable that maps a frame to ``sv.Detections``:
+passed as ``model`` into a callable that maps a frame to detections:
 
 * a weights path (``"yolov8n.pt"``) -- loaded through Ultralytics, which is an
   extra (``pip install "cvflair[yolo]"``), never a hard dependency;
 * an already constructed Ultralytics model -- its results are converted;
-* any callable returning ``sv.Detections`` -- used as it is.
+* any callable returning detections -- used as it is.
 
 Keeping Ultralytics out of the dependency list is deliberate: it is AGPL-3.0,
 and pulling it in would push that licence onto every cvflair user.
@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
-import supervision as sv
+
+from .detections import Detections, is_detections
 
 __all__ = [
     "Detector",
@@ -38,7 +39,7 @@ WEIGHT_SUFFIXES = frozenset({".pt", ".onnx", ".engine", ".torchscript", ".mlpack
 class Detector(Protocol):
     """Anything that turns one frame into detections."""
 
-    def __call__(self, frame: np.ndarray) -> sv.Detections: ...
+    def __call__(self, frame: np.ndarray) -> Detections: ...
 
 
 ModelLike = str | Path | Detector | Any
@@ -46,25 +47,29 @@ ModelLike = str | Path | Detector | Any
 
 class UltralyticsDetector:
     """
-    Runs an Ultralytics model and converts its output to ``sv.Detections``.
+    Runs an Ultralytics model and converts its output to :class:`Detections`.
 
     ``predict_kwargs`` is forwarded to every call (``conf``, ``iou``, ``device``,
     ``classes`` ...). ``verbose`` defaults to ``False`` so the capture loop is
     not drowned in per-frame logging.
+
+    ``convert`` swaps the conversion step -- pass
+    ``supervision.Detections.from_ultralytics`` to get masks and oriented boxes
+    carried over as well.
     """
 
     def __init__(
         self,
         model: Any,
         *,
-        convert: Callable[[Any], sv.Detections] | None = None,
+        convert: Callable[[Any], Detections] | None = None,
         **predict_kwargs: Any,
     ) -> None:
         self.model = model
         self.predict_kwargs = {"verbose": False, **predict_kwargs}
-        self._convert = convert or sv.Detections.from_ultralytics
+        self._convert = convert or Detections.from_ultralytics
 
-    def __call__(self, frame: np.ndarray) -> sv.Detections:
+    def __call__(self, frame: np.ndarray) -> Detections:
         results = self.model(frame, **self.predict_kwargs)
         return self._convert(results[0])
 
@@ -75,15 +80,16 @@ class UltralyticsDetector:
 class _CallableDetector:
     """Wraps a user callable so a wrong return type fails with a clear message."""
 
-    def __init__(self, function: Callable[[np.ndarray], sv.Detections]) -> None:
+    def __init__(self, function: Callable[[np.ndarray], Detections]) -> None:
         self.function = function
 
-    def __call__(self, frame: np.ndarray) -> sv.Detections:
+    def __call__(self, frame: np.ndarray) -> Detections:
         detections = self.function(frame)
-        if not isinstance(detections, sv.Detections):
+        if not is_detections(detections):
             raise TypeError(
-                f"model returned {type(detections).__name__}, expected supervision.Detections. "
-                "Convert the model output first, e.g. sv.Detections.from_ultralytics(result)."
+                f"model returned {type(detections).__name__}, expected detections with an "
+                "xyxy array. Build cvflair.Detections(xyxy=..., class_id=...), or pass a "
+                "supervision.Detections straight through."
             )
         return detections
 
@@ -136,5 +142,5 @@ def resolve_detector(model: ModelLike | None) -> Detector | None:
 
     raise TypeError(
         f"model must be a weights path, an Ultralytics model, or a callable returning "
-        f"supervision.Detections; got {type(model).__name__}."
+        f"detections; got {type(model).__name__}."
     )

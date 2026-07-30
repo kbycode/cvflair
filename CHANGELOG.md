@@ -3,6 +3,32 @@
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdır.
 
+## 0.4.0
+
+### Değişti — bağımlılık
+- **`supervision` artık zorunlu bağımlılık değil.** Kurulum yalnızca `numpy` ve
+  `opencv-python` çekiyor: `import cvflair` 2.9 saniyeden ~0.3 saniyeye indi, kurulum
+  ~380 MB'tan ~170 MB'a düştü (scipy, matplotlib, pillow, fonttools artık gelmiyor).
+  `supervision>=0.28,<0.30` sürüm kilidi de ortadan kalktı.
+- Uyumluluk korundu: elde `supervision.Detections` olan onu doğrudan `Theme.annotate`
+  veya `Camera.show`'a verebilir; `supervision.ColorPalette` ve `Color` da palet
+  olarak kabul ediliyor. Bunlar `tests/test_supervision_compat.py` ile doğrulanıyor.
+
+### Eklendi
+- `cvflair.Detections` — kutu taşıyıcısı; `from_ultralytics` ve `from_arrays`.
+  Alan adlarına göre okuma yapıldığı için yabancı tespit nesneleri de çalışıyor.
+- `cvflair.colors`: `Color`, `ColorPalette`, `ColorLookup`. Paletler artık düz hex
+  listesi olarak yazılabiliyor: `Theme(palette=["#39FF14"], text_color="#101010")`.
+- `BoxAnnotator`, `RoundBoxAnnotator`, `BoxCornerAnnotator`, `LabelAnnotator` —
+  daha önce `supervision`'dan gelen dördü artık `cvflair.annotators` içinde.
+
+### Kırıcı olabilir
+- `Theme.palette` / `accent_palette` / `text_color` alanları artık `cvflair` renk
+  tiplerine dönüştürülüyor. `sv.ColorPalette` vermek çalışmaya devam ediyor, ancak
+  `theme.palette` geri okunduğunda `cvflair.ColorPalette` dönüyor.
+- Segmentasyon maskeleri ve döndürülmüş kutular taşınmıyor. Onlar için
+  `supervision.Detections.from_ultralytics` çıktısı doğrudan verilebilir.
+
 ## 0.3.0
 
 ### Eklendi

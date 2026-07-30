@@ -12,9 +12,8 @@ import math
 import time
 
 import numpy as np
-import supervision as sv
 
-from cvflair import Camera, available_themes
+from cvflair import Camera, Detections, available_themes
 
 #: Kaç saniyede bir sıradaki temaya geçileceği. Kare sayısı yerine süre
 #: kullanılıyor, çünkü kare hızı cihaza göre değişiyor.
@@ -29,7 +28,7 @@ def _pulse(tick: int, period: int, low: float, high: float) -> float:
     return low + (high - low) * phase
 
 
-def fake_detections(width: int, height: int, tick: int) -> sv.Detections:
+def fake_detections(width: int, height: int, tick: int) -> Detections:
     """İki kutu: biri yatay, diğeri dikey salınıyor."""
     box_w, box_h = width * 0.26, height * 0.42
     left = _pulse(tick, 140, 0.04, 0.42) * width
@@ -39,7 +38,7 @@ def fake_detections(width: int, height: int, tick: int) -> sv.Detections:
     small_left = width * 0.62
     small_top = _pulse(tick, 100, 0.10, 0.55) * height
 
-    return sv.Detections(
+    return Detections(
         xyxy=np.array(
             [
                 [left, top, left + box_w, top + box_h],

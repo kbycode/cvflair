@@ -1,13 +1,14 @@
-"""Tests for the outline styles cvflair adds on top of supervision."""
+"""Tests for the outline annotators: geometry, colours and edge cases."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
-import supervision as sv
 from conftest import FRAME_SHAPE
 
+from cvflair import ColorPalette, Detections
 from cvflair.annotators import (
+    BoxAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
@@ -23,8 +24,8 @@ ANNOTATORS = [
     TargetBoxAnnotator,
 ]
 
-RED = sv.ColorPalette([sv.Color(r=255, g=0, b=0)])
-BLUE = sv.ColorPalette([sv.Color(r=0, g=0, b=255)])
+RED = ColorPalette.from_hex(["#FF0000"])
+BLUE = ColorPalette.from_hex(["#0000FF"])
 
 
 def blank() -> np.ndarray:
@@ -53,7 +54,7 @@ def test_annotator_draws_in_place(annotator_type, detections):
 def test_empty_detections_draw_nothing(annotator_type):
     frame = blank()
 
-    annotator_type(color=RED).annotate(scene=frame, detections=sv.Detections.empty())
+    annotator_type(color=RED).annotate(scene=frame, detections=Detections.empty())
 
     assert painted(frame) == 0
 
@@ -86,7 +87,7 @@ def test_accent_colour_is_used(annotator_type, detections):
 def test_dashes_leave_gaps(detections):
     solid, dashed = blank(), blank()
 
-    sv.BoxAnnotator(color=RED, thickness=2).annotate(scene=solid, detections=detections)
+    BoxAnnotator(color=RED, thickness=2).annotate(scene=solid, detections=detections)
     DashedBoxAnnotator(color=RED, thickness=2, dash_length=6, gap_length=6).annotate(
         scene=dashed, detections=detections
     )
@@ -193,7 +194,7 @@ def test_target_keeps_the_full_rectangle(detections):
 
 def test_degenerate_boxes_are_skipped():
     frame = blank()
-    flat = sv.Detections(
+    flat = Detections(
         xyxy=np.array([[30, 30, 30, 30]], dtype=np.float32), class_id=np.array([0])
     )
 

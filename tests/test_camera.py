@@ -98,7 +98,7 @@ def test_stream_without_a_model_yields_bare_frames(camera_factory):
 def test_stream_reports_a_broken_model(camera_factory):
     camera, _ = camera_factory(frame_count=3, delay=0.01)
 
-    with pytest.raises(TypeError, match="expected supervision.Detections"):
+    with pytest.raises(TypeError, match="expected detections"):
         for _ in camera.stream(timeout=2.0, model=lambda frame: None):
             pass
 

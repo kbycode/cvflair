@@ -1,15 +1,12 @@
 """
-Box outline styles that ``supervision`` does not ship.
+Every outline style cvflair can draw.
 
-Everything here subclasses ``supervision``'s ``BaseAnnotator`` and resolves
-colours through its own ``resolve_color``, so colour palettes, ``ColorLookup``
-and the ``Detections`` contract behave exactly as in the built-in annotators.
-Only the outline geometry is new: dashes, rounded brackets, a reticle and a
-target lock.
-
-Each annotator draws with a handful of OpenCV calls per detection, which is the
-same shape as ``supervision``'s own annotators; the accent colour is a second
-palette used for the parts that should stand out from the edges.
+The three familiar ones (box, rounded box, corners) plus the five it adds
+(dashes, dashed corners, brackets, reticle, target lock) and the label plate.
+All of them share one loop: walk the detections, resolve a colour per box, draw
+with a handful of OpenCV calls. Nothing here allocates per frame beyond what
+OpenCV needs, and the annotator instances are meant to be built once and reused
+-- :class:`cvflair.Theme` does exactly that.
 """
 
 from __future__ import annotations
@@ -19,65 +16,26 @@ from typing import Any
 
 import cv2
 import numpy as np
-import supervision as sv
-from supervision.annotators.base import BaseAnnotator
-from supervision.annotators.utils import resolve_color
+
+from .colors import Color, ColorLookup, ColorPalette, resolve_color, resolve_palette
+from .detections import detection_names
 
 __all__ = [
+    "BoxAnnotator",
+    "RoundBoxAnnotator",
+    "BoxCornerAnnotator",
     "DashedBoxAnnotator",
     "DashedCornerAnnotator",
     "BracketBoxAnnotator",
     "CrosshairAnnotator",
     "TargetBoxAnnotator",
+    "LabelAnnotator",
 ]
 
-Palette = sv.Color | sv.ColorPalette
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
-class _OutlineAnnotator(BaseAnnotator):
-    """Shared plumbing: iterate detections, resolve colours, hand over the box."""
-
-    def __init__(
-        self,
-        color: Palette = sv.ColorPalette.DEFAULT,
-        thickness: int = 2,
-        color_lookup: sv.ColorLookup = sv.ColorLookup.CLASS,
-        accent_color: Palette | None = None,
-    ) -> None:
-        self.color = color
-        self.thickness = max(1, int(thickness))
-        self.color_lookup = color_lookup
-        self.accent_color = accent_color
-
-    def annotate(
-        self,
-        scene: np.ndarray,
-        detections: sv.Detections,
-        custom_color_lookup: np.ndarray | None = None,
-    ) -> np.ndarray:
-        lookup = self.color_lookup if custom_color_lookup is None else custom_color_lookup
-        for index in range(len(detections)):
-            x1, y1, x2, y2 = detections.xyxy[index].astype(int)
-            colour = resolve_color(self.color, detections, index, lookup).as_bgr()
-            accent = (
-                resolve_color(self.accent_color, detections, index, lookup).as_bgr()
-                if self.accent_color is not None
-                else colour
-            )
-            self.draw(scene, (int(x1), int(y1), int(x2), int(y2)), colour, accent)
-        return scene
-
-    def draw(
-        self,
-        scene: np.ndarray,
-        box: tuple[int, int, int, int],
-        colour: tuple[int, int, int],
-        accent: tuple[int, int, int],
-    ) -> None:  # pragma: no cover - overridden by every subclass
-        raise NotImplementedError
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(thickness={self.thickness})"
+# -- shared drawing helpers -------------------------------------------------
 
 
 def _dashed_line(
@@ -97,16 +55,155 @@ def _dashed_line(
     uy = (end[1] - start[1]) / length
     travelled = 0.0
     while travelled < length:
-        run = min(dash, length - travelled)
-        end_at = travelled + run
+        end_at = travelled + min(dash, length - travelled)
         first = (round(start[0] + ux * travelled), round(start[1] + uy * travelled))
         second = (round(start[0] + ux * end_at), round(start[1] + uy * end_at))
         cv2.line(scene, first, second, colour, thickness)
         travelled += step
 
 
+def _rounded_outline(
+    scene: np.ndarray,
+    box: tuple[int, int, int, int],
+    radius: int,
+    colour: tuple[int, int, int],
+    thickness: int,
+) -> None:
+    x1, y1, x2, y2 = box
+    radius = int(min(radius, (x2 - x1) / 2, (y2 - y1) / 2))
+    if radius <= 0:
+        cv2.rectangle(scene, (x1, y1), (x2, y2), colour, thickness)
+        return
+
+    cv2.line(scene, (x1 + radius, y1), (x2 - radius, y1), colour, thickness)
+    cv2.line(scene, (x1 + radius, y2), (x2 - radius, y2), colour, thickness)
+    cv2.line(scene, (x1, y1 + radius), (x1, y2 - radius), colour, thickness)
+    cv2.line(scene, (x2, y1 + radius), (x2, y2 - radius), colour, thickness)
+
+    for centre, start_angle in (
+        ((x1 + radius, y1 + radius), 180),
+        ((x2 - radius, y1 + radius), 270),
+        ((x2 - radius, y2 - radius), 0),
+        ((x1 + radius, y2 - radius), 90),
+    ):
+        cv2.ellipse(
+            scene, centre, (radius, radius), 0, start_angle, start_angle + 90,
+            colour, thickness, cv2.LINE_AA,
+        )
+
+
+def _rounded_fill(
+    scene: np.ndarray,
+    box: tuple[int, int, int, int],
+    radius: int,
+    colour: tuple[int, int, int],
+) -> None:
+    x1, y1, x2, y2 = box
+    radius = int(min(radius, (x2 - x1) / 2, (y2 - y1) / 2))
+    if radius <= 0:
+        cv2.rectangle(scene, (x1, y1), (x2, y2), colour, -1)
+        return
+
+    cv2.rectangle(scene, (x1 + radius, y1), (x2 - radius, y2), colour, -1)
+    cv2.rectangle(scene, (x1, y1 + radius), (x2, y2 - radius), colour, -1)
+    for centre in (
+        (x1 + radius, y1 + radius),
+        (x2 - radius, y1 + radius),
+        (x1 + radius, y2 - radius),
+        (x2 - radius, y2 - radius),
+    ):
+        cv2.circle(scene, centre, radius, colour, -1, cv2.LINE_AA)
+
+
+def _corner_arm(width: int, height: int, corner_length: int) -> int:
+    return int(min(corner_length, min(width, height) / 2))
+
+
+CORNERS = ((0, 1, 1, 1), (2, 1, -1, 1), (0, 3, 1, -1), (2, 3, -1, -1))
+
+
+# -- outline annotators -----------------------------------------------------
+
+
+class _OutlineAnnotator:
+    """Shared plumbing: iterate detections, resolve colours, hand over the box."""
+
+    def __init__(
+        self,
+        color: Any = None,
+        thickness: int = 2,
+        color_lookup: ColorLookup = ColorLookup.CLASS,
+        accent_color: Any = None,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.thickness = max(1, int(thickness))
+        self.color_lookup = color_lookup
+        self.accent_color = None if accent_color is None else resolve_palette(accent_color)
+
+    def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
+        for index in range(len(detections)):
+            x1, y1, x2, y2 = detections.xyxy[index].astype(int)
+            colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
+            accent = (
+                resolve_color(self.accent_color, detections, index, self.color_lookup).as_bgr()
+                if self.accent_color is not None
+                else colour
+            )
+            self.draw(scene, (int(x1), int(y1), int(x2), int(y2)), colour, accent)
+        return scene
+
+    def draw(
+        self,
+        scene: np.ndarray,
+        box: tuple[int, int, int, int],
+        colour: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> None:  # pragma: no cover - overridden by every subclass
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(thickness={self.thickness})"
+
+
+class BoxAnnotator(_OutlineAnnotator):
+    """A plain rectangle."""
+
+    def draw(self, scene, box, colour, accent) -> None:
+        cv2.rectangle(scene, (box[0], box[1]), (box[2], box[3]), colour, self.thickness)
+
+
+class RoundBoxAnnotator(_OutlineAnnotator):
+    """A rectangle with rounded corners. ``roundness`` is a share of the shorter side."""
+
+    def __init__(self, *args: Any, roundness: float = 0.6, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.roundness = min(max(float(roundness), 0.01), 1.0)
+
+    def draw(self, scene, box, colour, accent) -> None:
+        short_side = min(box[2] - box[0], box[3] - box[1])
+        _rounded_outline(scene, box, int(self.roundness * short_side / 2), colour, self.thickness)
+
+
+class BoxCornerAnnotator(_OutlineAnnotator):
+    """Only the four corners, as solid arms."""
+
+    def __init__(self, *args: Any, corner_length: int = 15, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.corner_length = max(1, int(corner_length))
+
+    def draw(self, scene, box, colour, accent) -> None:
+        width, height = box[2] - box[0], box[3] - box[1]
+        if width <= 0 or height <= 0:
+            return
+        arm = _corner_arm(width, height, self.corner_length)
+        for ix, iy, dx, dy in CORNERS:
+            cx, cy = box[ix], box[iy]
+            cv2.line(scene, (cx, cy), (cx + dx * arm, cy), colour, self.thickness)
+            cv2.line(scene, (cx, cy), (cx, cy + dy * arm), colour, self.thickness)
+
+
 class DashedBoxAnnotator(_OutlineAnnotator):
-    """A rectangle drawn as dashes. Reads as "tracked but not confirmed"."""
+    """A rectangle drawn as dashes."""
 
     def __init__(self, *args: Any, dash_length: int = 12, gap_length: int = 8, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -122,54 +219,33 @@ class DashedBoxAnnotator(_OutlineAnnotator):
             )
 
 
-class DashedCornerAnnotator(_OutlineAnnotator):
+class DashedCornerAnnotator(DashedBoxAnnotator):
     """
     The dashed frame with solid corner brackets laid over it.
 
-    Both styles are drawn: the full rectangle as dashes in the detection colour,
-    then the corner arms as unbroken lines. With ``accent_color`` set the corners
-    take the second colour, which is what makes the hybrid readable -- a dashed
-    outline that still has hard, solid corners marking the box.
+    With ``accent_color`` set the corners take the second colour, which is what
+    makes the hybrid readable.
     """
 
-    def __init__(
-        self,
-        *args: Any,
-        corner_length: int = 26,
-        dash_length: int = 7,
-        gap_length: int = 5,
-        **kwargs: Any,
-    ):
+    def __init__(self, *args: Any, corner_length: int = 26, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.corner_length = max(1, int(corner_length))
-        self.dash_length = max(1, int(dash_length))
-        self.gap_length = max(1, int(gap_length))
 
     def draw(self, scene, box, colour, accent) -> None:
-        x1, y1, x2, y2 = box
-        width, height = x2 - x1, y2 - y1
+        width, height = box[2] - box[0], box[3] - box[1]
         if width <= 0 or height <= 0:
             return
+        super().draw(scene, box, colour, accent)
 
-        corners = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
-        for start, end in zip(corners, corners[1:] + corners[:1], strict=True):
-            _dashed_line(
-                scene, start, end, colour, self.thickness, self.dash_length, self.gap_length
-            )
-
-        arm = int(min(self.corner_length, min(width, height) / 2))
-        for cx, cy, dx, dy in ((x1, y1, 1, 1), (x2, y1, -1, 1), (x1, y2, 1, -1), (x2, y2, -1, -1)):
+        arm = _corner_arm(width, height, self.corner_length)
+        for ix, iy, dx, dy in CORNERS:
+            cx, cy = box[ix], box[iy]
             cv2.line(scene, (cx, cy), (cx + dx * arm, cy), accent, self.thickness)
             cv2.line(scene, (cx, cy), (cx, cy + dy * arm), accent, self.thickness)
 
 
 class BracketBoxAnnotator(_OutlineAnnotator):
-    """
-    Corner brackets with rounded elbows -- the corner and round styles combined.
-
-    ``roundness`` sets the elbow radius as a share of the shorter box side, the
-    same meaning it has in ``supervision``'s ``RoundBoxAnnotator``.
-    """
+    """Corner brackets with rounded elbows -- the corner and round styles combined."""
 
     def __init__(
         self, *args: Any, corner_length: int = 22, roundness: float = 0.4, **kwargs: Any
@@ -179,27 +255,20 @@ class BracketBoxAnnotator(_OutlineAnnotator):
         self.roundness = min(max(float(roundness), 0.01), 1.0)
 
     def draw(self, scene, box, colour, accent) -> None:
-        x1, y1, x2, y2 = box
-        width, height = x2 - x1, y2 - y1
+        width, height = box[2] - box[0], box[3] - box[1]
         if width <= 0 or height <= 0:
             return
 
-        # Kol, yayın bittiği yerden devam eder: yarıçap kolun tamamını yerse
-        # düz parça sıfır uzunlukta kalır ve köşe sadece yay gibi görünür.
-        arm = int(min(self.corner_length, min(width, height) / 2))
+        # The arm continues where the elbow ends; a radius as long as the arm
+        # would leave no straight part at all.
+        arm = _corner_arm(width, height, self.corner_length)
         radius = int(min(self.roundness * min(width, height) / 2, arm * 0.6))
 
-        corners = (
-            ((x1, y1), (1, 1), 180),
-            ((x2, y1), (-1, 1), 270),
-            ((x2, y2), (-1, -1), 0),
-            ((x1, y2), (1, -1), 90),
-        )
-        for (cx, cy), (dx, dy), start_angle in corners:
-            centre = (cx + dx * radius, cy + dy * radius)
+        for (ix, iy, dx, dy), start_angle in zip(CORNERS, (180, 270, 90, 0), strict=True):
+            cx, cy = box[ix], box[iy]
             cv2.ellipse(
-                scene, centre, (radius, radius), 0, start_angle, start_angle + 90,
-                accent, self.thickness, cv2.LINE_AA,
+                scene, (cx + dx * radius, cy + dy * radius), (radius, radius), 0,
+                start_angle, start_angle + 90, accent, self.thickness, cv2.LINE_AA,
             )
             cv2.line(scene, (cx + dx * radius, cy), (cx + dx * arm, cy), colour, self.thickness)
             cv2.line(scene, (cx, cy + dy * radius), (cx, cy + dy * arm), colour, self.thickness)
@@ -231,12 +300,7 @@ class CrosshairAnnotator(_OutlineAnnotator):
 
 
 class TargetBoxAnnotator(_OutlineAnnotator):
-    """
-    Thin full rectangle with heavy corner brackets -- a target-lock frame.
-
-    With ``accent_color`` set, the brackets take the accent and the rectangle
-    keeps the detection colour, which is where the two-tone look comes from.
-    """
+    """Thin full rectangle with heavy corner brackets -- a target-lock frame."""
 
     def __init__(
         self, *args: Any, corner_length: int = 26, edge_thickness: int = 1, **kwargs: Any
@@ -252,8 +316,97 @@ class TargetBoxAnnotator(_OutlineAnnotator):
             return
 
         cv2.rectangle(scene, (x1, y1), (x2, y2), colour, self.edge_thickness)
-
-        arm = int(min(self.corner_length, min(width, height) / 2))
-        for cx, cy, dx, dy in ((x1, y1, 1, 1), (x2, y1, -1, 1), (x1, y2, 1, -1), (x2, y2, -1, -1)):
+        arm = _corner_arm(width, height, self.corner_length)
+        for ix, iy, dx, dy in CORNERS:
+            cx, cy = box[ix], box[iy]
             cv2.line(scene, (cx, cy), (cx + dx * arm, cy), accent, self.thickness)
             cv2.line(scene, (cx, cy), (cx, cy + dy * arm), accent, self.thickness)
+
+
+# -- labels -----------------------------------------------------------------
+
+
+class LabelAnnotator:
+    """
+    The filled plate above each box, with the class name inside.
+
+    Text comes from ``labels`` when given, otherwise from the detections' class
+    names, then the class id, then the box index.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        text_color: Any = Color.BLACK,
+        text_scale: float = 0.5,
+        text_thickness: int = 1,
+        text_padding: int = 6,
+        border_radius: int = 0,
+        color_lookup: ColorLookup = ColorLookup.CLASS,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.text_color = resolve_palette(text_color).colors[0]
+        self.text_scale = float(text_scale)
+        self.text_thickness = max(1, int(text_thickness))
+        self.text_padding = max(0, int(text_padding))
+        self.border_radius = max(0, int(border_radius))
+        self.color_lookup = color_lookup
+
+    def annotate(
+        self, scene: np.ndarray, detections: Any, labels: Any = None
+    ) -> np.ndarray:
+        texts = self._texts(detections, labels)
+        height_limit = scene.shape[0]
+
+        for index in range(len(detections)):
+            x1, y1 = detections.xyxy[index][:2].astype(int)
+            colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
+            text = texts[index]
+
+            (text_width, text_height), _ = cv2.getTextSize(
+                text, FONT, self.text_scale, self.text_thickness
+            )
+            plate_width = text_width + self.text_padding * 2
+            plate_height = text_height + self.text_padding * 2
+
+            top = int(y1) - plate_height
+            if top < 0:  # no room above the box, so the plate sits inside it
+                top = int(y1)
+            bottom = min(top + plate_height, height_limit)
+            left = int(x1)
+
+            plate = (left, top, left + plate_width, bottom)
+            _rounded_fill(scene, plate, self.border_radius, colour)
+            cv2.putText(
+                scene,
+                text,
+                (left + self.text_padding, bottom - self.text_padding),
+                FONT,
+                self.text_scale,
+                self.text_color.as_bgr(),
+                self.text_thickness,
+                cv2.LINE_AA,
+            )
+        return scene
+
+    def _texts(self, detections: Any, labels: Any) -> list[str]:
+        count = len(detections)
+        if labels is not None:
+            labels = list(labels)
+            if len(labels) != count:
+                raise ValueError(
+                    f"Got {len(labels)} labels for {count} detections; they must match."
+                )
+            return [str(label) for label in labels]
+
+        names = detection_names(detections)
+        if names is not None:
+            return [str(name) for name in names]
+
+        class_id = getattr(detections, "class_id", None)
+        if class_id is not None:
+            return [str(int(value)) for value in class_id]
+        return [str(index) for index in range(count)]
+
+    def __repr__(self) -> str:
+        return f"LabelAnnotator(text_scale={self.text_scale})"
