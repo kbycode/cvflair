@@ -14,8 +14,9 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 
 ![cvflair demo](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/demo.gif)
 
-*Aynı tespitler, üç tema. Animasyon `tools/make_demo_gif.py` ile üretildi — sentetik
-sahne, kamera gerekmiyor.*
+*Aynı tespitler, dört tema. Sahne ve figürler `tools/make_demo_gif.py` ile çiziliyor;
+kamera da hazır görsel de gerekmiyor. Kendi arka planını kullanmak için:
+`python tools/make_demo_gif.py --background docs/sokak.jpg`*
 
 > **Durum:** kamera döngüsü, dört tema, sekiz çerçeve biçimi ve model bağlama hazır.
 > PyPI'da: [cvflair](https://pypi.org/project/cvflair/).

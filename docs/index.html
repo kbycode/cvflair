@@ -381,6 +381,25 @@ const ctx = canvas.getContext("2d");
 const video = document.getElementById("video");
 const statusEl = document.getElementById("status");
 
+// Çizim ölçüleri CSS pikseli cinsinden tutulur. Canvas'ın iç çözünürlüğü ekranın
+// piksel oranına göre ayarlanır; aksi halde sabit 880 px'lik tuval panele
+// sığdırmak için küçültülüyor ve etiket yazısı okunmaz hâle geliyordu.
+const ASPECT = 16 / 9;
+const view = { width: 880, height: 495 };
+
+function fitCanvas() {
+  const cssWidth = Math.max(160, Math.round(canvas.getBoundingClientRect().width));
+  const cssHeight = Math.round(cssWidth / ASPECT);
+  const ratio = window.devicePixelRatio || 1;
+
+  view.width = cssWidth;
+  view.height = cssHeight;
+  canvas.style.height = cssHeight + "px";
+  canvas.width = Math.round(cssWidth * ratio);
+  canvas.height = Math.round(cssHeight * ratio);
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
 // --- yardımcılar -----------------------------------------------------------
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -966,7 +985,7 @@ function render(now = performance.now()) {
   lastFrame = now;
   if (animating) sceneTime += delta;
 
-  const { width, height } = canvas;
+  const { width, height } = view;
   const frames = actorFrames(width, height);
 
   if (cameraStream && video.readyState >= 2) {
@@ -1176,6 +1195,10 @@ async function toggleCamera(event) {
 readUrl();
 bindControls();
 syncControls();
+fitCanvas();
+// Yerleşim oturduğunda ve panel yeniden boyutlandığında tuval kendini toplar;
+// window resize olayı panel içi boyut değişimlerinde tetiklenmiyor.
+new ResizeObserver(fitCanvas).observe(canvas);
 requestAnimationFrame(render);
 </script>
 </body>

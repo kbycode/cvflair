@@ -5,6 +5,16 @@ Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdı
 
 ## 0.4.0
 
+### Belgeler
+- Demo GIF'i artık alacakaranlıkta bir sokak sahnesinde geçiyor: gökyüzü geçişi,
+  pencereleri yanan bina silüetleri, kaldırım ve yol. Figürler (yürüyen kişi, giden
+  bisiklet, koşan köpek) çiziliyor; kutular figürlerin gerçek sınırlarından
+  hesaplanıyor. `tools/make_demo_gif.py --background <görsel>` ile dışarıdan bir
+  arka plan da verilebiliyor.
+- Playground'un önizleme tuvali artık gösterildiği boyutta çiziliyor (devicePixelRatio
+  dahil). Önceden sabit 880 px'lik tuval panele küçültülerek sığdırıldığı için etiket
+  yazısı ekranda ~9 px'e düşüp okunmaz hâle geliyordu.
+
 ### Değişti — bağımlılık
 - **`supervision` artık zorunlu bağımlılık değil.** Kurulum yalnızca `numpy` ve
   `opencv-python` çekiyor: `import cvflair` 2.9 saniyeden ~0.3 saniyeye indi, kurulum
