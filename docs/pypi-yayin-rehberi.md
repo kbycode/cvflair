@@ -184,6 +184,15 @@ git tag -a v0.2.0 -m "cvflair 0.2.0"   # yol A kullanıldıysa etiket burada at�
 git push origin v0.2.0
 ```
 
+- README'nin rozet satırına PyPI rozetleri eklenir (yayın öncesinde eklenirse
+  "not found" görünür, o yüzden bu adımda):
+
+  ```markdown
+  [![PyPI](https://img.shields.io/pypi/v/cvflair)](https://pypi.org/project/cvflair/)
+  [![İndirme](https://img.shields.io/pypi/dm/cvflair)](https://pypi.org/project/cvflair/)
+  ```
+
+- GitHub deposunun *About* alanına `https://pypi.org/project/cvflair/` adresi eklenir.
 - GitHub'da release oluşturulur; açıklamaya CHANGELOG'un ilgili bölümü konur.
 - Temiz bir ortamda `pip install cvflair` ile son doğrulama yapılır.
 - Hesap kapsamlı token silinip yerine proje kapsamlı token oluşturulur (yol A).

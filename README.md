@@ -1,5 +1,9 @@
 # cvflair
 
+[![CI](https://github.com/kbycode/cvflair/actions/workflows/ci.yml/badge.svg)](https://github.com/kbycode/cvflair/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/kbycode/cvflair/blob/main/LICENSE)
+
 Bilgisayarlı görü tespitlerini üç satırda, hazır temalarla ekrana çizen ince bir katman.
 
 Çizim işini [supervision](https://github.com/roboflow/supervision) yapar; cvflair kamera
