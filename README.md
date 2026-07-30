@@ -1,7 +1,9 @@
 # cvflair
 
+[![PyPI](https://img.shields.io/pypi/v/cvflair)](https://pypi.org/project/cvflair/)
 [![CI](https://github.com/kbycode/cvflair/actions/workflows/ci.yml/badge.svg)](https://github.com/kbycode/cvflair/actions/workflows/ci.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/cvflair)](https://pypi.org/project/cvflair/)
+[![İndirme](https://img.shields.io/pypi/dm/cvflair)](https://pypi.org/project/cvflair/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/kbycode/cvflair/blob/main/LICENSE)
 
 Bilgisayarlı görü tespitlerini üç satırda, hazır temalarla ekrana çizen ince bir katman.
@@ -17,22 +19,30 @@ tarafından çizilebilir.
 sahne, kamera gerekmiyor.*
 
 > **Durum:** Faz 1 tamam (kamera döngüsü, üç tema, testler), Faz 2 başladı (model
-> bağlama). Paket henüz PyPI'da yayınlanmadı.
+> bağlama). İlk sürüm PyPI'da: [cvflair 0.2.0](https://pypi.org/project/cvflair/).
 
 ## Kurulum
 
 Python 3.10 veya üzeri gerekir (bu alt sınır `supervision`'dan geliyor).
 
 ```bash
-git clone https://github.com/kbycode/cvflair.git
-cd cvflair
-pip install -e .
+pip install cvflair
 ```
 
-Yayınlandıktan sonra: `pip install cvflair`
+YOLO ile kullanmak için Ultralytics extra'sı — ayrıntı ve lisans notu için aşağıdaki
+[Lisans](#lisans) bölümü:
 
-YOLO ile kullanmak için Ultralytics extra'sı: `pip install -e ".[yolo]"`
-(ayrıntı ve lisans notu için aşağıdaki [Lisans](#lisans) bölümü).
+```bash
+pip install "cvflair[yolo]"
+```
+
+Depodan geliştirme kurulumu:
+
+```bash
+git clone https://github.com/kbycode/cvflair.git
+cd cvflair
+pip install -e ".[dev]"
+```
 
 ## Hızlı başlangıç
 
