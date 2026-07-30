@@ -12,6 +12,7 @@ from cvflair.annotators import (
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
+    DashedCornerAnnotator,
     TargetBoxAnnotator,
 )
 from cvflair.themes import BOX_STYLES
@@ -69,6 +70,7 @@ def test_theme_rejects_non_string():
         ("round", sv.RoundBoxAnnotator),
         ("corner", sv.BoxCornerAnnotator),
         ("dashed", DashedBoxAnnotator),
+        ("dashed_corner", DashedCornerAnnotator),
         ("bracket", BracketBoxAnnotator),
         ("crosshair", CrosshairAnnotator),
         ("target", TargetBoxAnnotator),

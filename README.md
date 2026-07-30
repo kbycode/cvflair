@@ -130,7 +130,7 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 
 ![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
 
-`box_style` yedi değerden birini alır:
+`box_style` sekiz değerden birini alır:
 
 | Değer | Görünüm | Ayarları |
 |---|---|---|
@@ -138,6 +138,7 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 | `round` | yuvarlak köşeli dikdörtgen | `roundness` |
 | `corner` | yalnızca köşe çentikleri | `corner_length` |
 | `dashed` | kesikli çerçeve | `dash_length`, `gap_length` |
+| `dashed_corner` | kesikli çizgiyle çizilmiş köşe çentikleri (köşe + kesikli karışımı) | `corner_length`, `dash_length`, `gap_length` |
 | `bracket` | yuvarlak dirsekli köşe ayracı (köşe + yuvarlak karışımı) | `corner_length`, `roundness` |
 | `crosshair` | kenar ortası çentikleri + merkez artısı | `arm_length`, `center_size` |
 | `target` | ince çerçeve + kalın köşeler | `corner_length`, `edge_thickness` |

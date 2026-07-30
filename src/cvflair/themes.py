@@ -22,16 +22,21 @@ from .annotators import (
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
+    DashedCornerAnnotator,
     TargetBoxAnnotator,
 )
 
 __all__ = ["Theme", "get_theme", "available_themes", "BoxStyle", "BOX_STYLES"]
 
-BoxStyle = Literal["box", "round", "corner", "dashed", "bracket", "crosshair", "target"]
+BoxStyle = Literal[
+    "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target"
+]
 
 #: Every accepted ``box_style``. The first three come from ``supervision``, the
 #: rest from :mod:`cvflair.annotators`.
-BOX_STYLES: tuple[str, ...] = ("box", "round", "corner", "dashed", "bracket", "crosshair", "target")
+BOX_STYLES: tuple[str, ...] = (
+    "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
+)
 
 
 def _dim(color: sv.Color, factor: float) -> sv.Color:
@@ -152,6 +157,14 @@ class Theme:
             return DashedBoxAnnotator(
                 **common,
                 accent_color=accent,
+                dash_length=self.dash_length,
+                gap_length=self.gap_length,
+            )
+        if self.box_style == "dashed_corner":
+            return DashedCornerAnnotator(
+                **common,
+                accent_color=accent,
+                corner_length=self.corner_length,
                 dash_length=self.dash_length,
                 gap_length=self.gap_length,
             )

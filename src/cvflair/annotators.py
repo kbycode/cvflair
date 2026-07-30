@@ -25,6 +25,7 @@ from supervision.annotators.utils import resolve_color
 
 __all__ = [
     "DashedBoxAnnotator",
+    "DashedCornerAnnotator",
     "BracketBoxAnnotator",
     "CrosshairAnnotator",
     "TargetBoxAnnotator",
@@ -119,6 +120,42 @@ class DashedBoxAnnotator(_OutlineAnnotator):
             _dashed_line(
                 scene, start, end, colour, self.thickness, self.dash_length, self.gap_length
             )
+
+
+class DashedCornerAnnotator(_OutlineAnnotator):
+    """
+    Corner arms drawn as dashes -- the corner and dashed styles combined.
+
+    Only the corners are drawn, and each arm is broken into dashes, so the frame
+    stays light while still marking where the detection is.
+    """
+
+    def __init__(
+        self,
+        *args: Any,
+        corner_length: int = 26,
+        dash_length: int = 7,
+        gap_length: int = 5,
+        **kwargs: Any,
+    ):
+        super().__init__(*args, **kwargs)
+        self.corner_length = max(1, int(corner_length))
+        self.dash_length = max(1, int(dash_length))
+        self.gap_length = max(1, int(gap_length))
+
+    def draw(self, scene, box, colour, accent) -> None:
+        x1, y1, x2, y2 = box
+        width, height = x2 - x1, y2 - y1
+        if width <= 0 or height <= 0:
+            return
+
+        arm = int(min(self.corner_length, min(width, height) / 2))
+        for cx, cy, dx, dy in ((x1, y1, 1, 1), (x2, y1, -1, 1), (x1, y2, 1, -1), (x2, y2, -1, -1)):
+            for end in ((cx + dx * arm, cy), (cx, cy + dy * arm)):
+                _dashed_line(
+                    scene, (cx, cy), end, colour, self.thickness,
+                    self.dash_length, self.gap_length,
+                )
 
 
 class BracketBoxAnnotator(_OutlineAnnotator):

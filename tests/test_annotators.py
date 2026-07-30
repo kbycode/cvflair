@@ -11,10 +11,17 @@ from cvflair.annotators import (
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
+    DashedCornerAnnotator,
     TargetBoxAnnotator,
 )
 
-ANNOTATORS = [DashedBoxAnnotator, BracketBoxAnnotator, CrosshairAnnotator, TargetBoxAnnotator]
+ANNOTATORS = [
+    DashedBoxAnnotator,
+    DashedCornerAnnotator,
+    BracketBoxAnnotator,
+    CrosshairAnnotator,
+    TargetBoxAnnotator,
+]
 
 RED = sv.ColorPalette([sv.Color(r=255, g=0, b=0)])
 BLUE = sv.ColorPalette([sv.Color(r=0, g=0, b=255)])
@@ -97,6 +104,31 @@ def test_longer_dashes_cover_more(detections):
     )
 
     assert painted(long) > painted(short)
+
+
+def test_dashed_corner_keeps_the_edge_middles_empty(detections):
+    frame = blank()
+
+    DashedCornerAnnotator(color=RED, corner_length=14, thickness=2).annotate(
+        scene=frame, detections=detections
+    )
+
+    x1, y1, x2, y2 = detections.xyxy[0].astype(int)
+    middle = frame[y1 - 1 : y1 + 2, (x1 + x2) // 2 - 3 : (x1 + x2) // 2 + 4]
+    assert not middle.any(), "corner style should not reach the middle of an edge"
+
+
+def test_dashed_corner_is_lighter_than_a_solid_corner(detections):
+    solid, dashed = blank(), blank()
+
+    sv.BoxCornerAnnotator(color=RED, thickness=2, corner_length=26).annotate(
+        scene=solid, detections=detections
+    )
+    DashedCornerAnnotator(
+        color=RED, thickness=2, corner_length=26, dash_length=5, gap_length=5
+    ).annotate(scene=dashed, detections=detections)
+
+    assert 0 < painted(dashed) < painted(solid) * 0.8
 
 
 def test_bracket_draws_straight_arms_next_to_the_elbow(detections):

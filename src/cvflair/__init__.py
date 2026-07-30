@@ -17,6 +17,7 @@ from .annotators import (
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
+    DashedCornerAnnotator,
     TargetBoxAnnotator,
 )
 from .camera import Camera, CameraError
@@ -32,6 +33,7 @@ __all__ = [
     "CameraError",
     "CrosshairAnnotator",
     "DashedBoxAnnotator",
+    "DashedCornerAnnotator",
     "Detector",
     "TargetBoxAnnotator",
     "Theme",

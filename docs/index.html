@@ -183,6 +183,7 @@
           <button data-value="round" type="button">yuvarlak</button>
           <button data-value="corner" type="button">köşe</button>
           <button data-value="dashed" type="button">kesikli</button>
+          <button data-value="dashed_corner" type="button">kesikli köşe</button>
           <button data-value="bracket" type="button">ayraç</button>
           <button data-value="crosshair" type="button">artı</button>
           <button data-value="target" type="button">hedef</button>
@@ -196,15 +197,15 @@
         <label class="title" for="roundness">Yuvarlama <b id="roundnessOut"></b></label>
         <input type="range" id="roundness" min="0.05" max="1" step="0.05">
       </div>
-      <div class="row" data-only="corner bracket target">
+      <div class="row" data-only="corner dashed_corner bracket target">
         <label class="title" for="cornerLength">Köşe uzunluğu <b id="cornerLengthOut"></b></label>
         <input type="range" id="cornerLength" min="5" max="60" step="1">
       </div>
-      <div class="row" data-only="dashed">
+      <div class="row" data-only="dashed dashed_corner">
         <label class="title" for="dashLength">Çizgi boyu <b id="dashLengthOut"></b></label>
         <input type="range" id="dashLength" min="2" max="40" step="1">
       </div>
-      <div class="row" data-only="dashed">
+      <div class="row" data-only="dashed dashed_corner">
         <label class="title" for="gapLength">Boşluk <b id="gapLengthOut"></b></label>
         <input type="range" id="gapLength" min="2" max="40" step="1">
       </div>
@@ -352,7 +353,11 @@ const URL_KEYS = {
   g: "glow", gt: "glowThickness", gd: "glowDim",
   l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
 };
-const BOX_STYLES = ["box", "round", "corner", "dashed", "bracket", "crosshair", "target"];
+const BOX_STYLES = [
+  "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
+];
+const CORNER_STYLES = ["corner", "dashed_corner", "bracket", "target"];
+const DASH_STYLES = ["dashed", "dashed_corner"];
 const ACCENT_STYLES = ["bracket", "crosshair", "target"];
 const MAX_COLORS = 8;
 
@@ -466,10 +471,8 @@ function shareUrl() {
   params.set("t", String(state.thickness));
   if (usesAccent()) params.set("a", state.accent.slice(1));
   if (["round", "bracket"].includes(state.boxStyle)) params.set("r", String(state.roundness));
-  if (["corner", "bracket", "target"].includes(state.boxStyle)) {
-    params.set("c", String(state.cornerLength));
-  }
-  if (state.boxStyle === "dashed") {
+  if (CORNER_STYLES.includes(state.boxStyle)) params.set("c", String(state.cornerLength));
+  if (DASH_STYLES.includes(state.boxStyle)) {
     params.set("dl", String(state.dashLength));
     params.set("gl", String(state.gapLength));
   }
@@ -515,13 +518,10 @@ function pythonCode() {
   if (["round", "bracket"].includes(state.boxStyle) && state.roundness !== DEFAULTS.roundness) {
     lines.push("    roundness=" + state.roundness + ",");
   }
-  if (
-    ["corner", "bracket", "target"].includes(state.boxStyle)
-    && state.cornerLength !== DEFAULTS.cornerLength
-  ) {
+  if (CORNER_STYLES.includes(state.boxStyle) && state.cornerLength !== DEFAULTS.cornerLength) {
     lines.push("    corner_length=" + state.cornerLength + ",");
   }
-  if (state.boxStyle === "dashed") {
+  if (DASH_STYLES.includes(state.boxStyle)) {
     if (state.dashLength !== DEFAULTS.dashLength) {
       lines.push("    dash_length=" + state.dashLength + ",");
     }
@@ -626,6 +626,23 @@ function strokeBox(box, colour, thickness, accent) {
     ctx.lineCap = "butt";
     ctx.setLineDash([state.dashLength, state.gapLength]);
     ctx.strokeRect(x1, y1, width, height);
+    ctx.setLineDash([]);
+    return;
+  }
+
+  if (state.boxStyle === "dashed_corner") {
+    const arm = Math.min(state.cornerLength, shortSide / 2);
+    ctx.lineCap = "butt";
+    ctx.setLineDash([state.dashLength, state.gapLength]);
+    ctx.beginPath();
+    for (const [ix, iy, dx, dy] of CORNERS) {
+      const cx = box[ix];
+      const cy = box[iy];
+      // Her kol köşeden dışa doğru çizilir ki kesikler köşede hizalı başlasın.
+      ctx.moveTo(cx, cy); ctx.lineTo(cx + dx * arm, cy);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + dy * arm);
+    }
+    ctx.stroke();
     ctx.setLineDash([]);
     return;
   }
