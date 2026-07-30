@@ -8,6 +8,13 @@ import supervision as sv
 from conftest import FRAME_SHAPE
 
 from cvflair import Theme, available_themes, get_theme
+from cvflair.annotators import (
+    BracketBoxAnnotator,
+    CrosshairAnnotator,
+    DashedBoxAnnotator,
+    TargetBoxAnnotator,
+)
+from cvflair.themes import BOX_STYLES
 
 
 def blank() -> np.ndarray:
@@ -19,7 +26,7 @@ def painted_pixels(frame: np.ndarray) -> int:
 
 
 def test_shipped_themes():
-    assert available_themes() == ["minimal", "neon", "pastel"]
+    assert available_themes() == ["cyberpunk", "minimal", "neon", "pastel"]
 
 
 @pytest.mark.parametrize("name", available_themes())
@@ -46,8 +53,8 @@ def test_get_theme_returns_independent_instances():
 
 
 def test_unknown_theme_lists_the_options():
-    with pytest.raises(ValueError, match="Available: minimal, neon, pastel"):
-        get_theme("cyberpunk")
+    with pytest.raises(ValueError, match="Available: cyberpunk, minimal, neon, pastel"):
+        get_theme("vaporwave")
 
 
 def test_theme_rejects_non_string():
@@ -61,11 +68,43 @@ def test_theme_rejects_non_string():
         ("box", sv.BoxAnnotator),
         ("round", sv.RoundBoxAnnotator),
         ("corner", sv.BoxCornerAnnotator),
+        ("dashed", DashedBoxAnnotator),
+        ("bracket", BracketBoxAnnotator),
+        ("crosshair", CrosshairAnnotator),
+        ("target", TargetBoxAnnotator),
     ],
 )
 def test_box_style_selects_the_annotator(box_style, annotator_type):
     theme = Theme(box_style=box_style)
     assert isinstance(theme._box_annotator, annotator_type)
+
+
+@pytest.mark.parametrize("box_style", BOX_STYLES)
+def test_every_box_style_draws(box_style, detections):
+    frame = blank()
+
+    Theme(box_style=box_style, thickness=2).annotate(frame, detections)
+
+    assert painted_pixels(frame) > 0
+
+
+def test_accent_palette_reaches_the_annotator():
+    accent = sv.ColorPalette.from_hex(["#FFFFFF"])
+    theme = Theme(box_style="target", accent_palette=accent)
+
+    assert theme._box_annotator.accent_color is accent
+
+
+def test_glow_dims_the_accent_too():
+    theme = Theme(
+        box_style="target",
+        accent_palette=sv.ColorPalette.from_hex(["#FFFFFF"]),
+        glow=True,
+        glow_dim=0.5,
+    )
+
+    dimmed = theme._glow_annotator.accent_color.colors[0]
+    assert (dimmed.r, dimmed.g, dimmed.b) == (127, 127, 127)
 
 
 @pytest.mark.parametrize(

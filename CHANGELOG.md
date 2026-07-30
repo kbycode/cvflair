@@ -3,9 +3,27 @@
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdır.
 
-## Yayınlanmamış
+## 0.3.0
 
 ### Eklendi
+- Dört yeni çerçeve biçimi (`cvflair.annotators`): `dashed` (kesikli), `bracket`
+  (yuvarlak dirsekli köşe ayracı), `crosshair` (kenar ortası çentikleri + merkez artı),
+  `target` (ince çerçeve + kalın köşeler). Hepsi `supervision`'ın `BaseAnnotator`
+  arayüzünü ve `resolve_color` renk çözümlemesini kullanıyor, yani palet ve
+  `ColorLookup` davranışı yerleşik annotator'larla aynı.
+- `Theme.accent_palette`: ayraç dirsekleri, artı merkezi ve hedef köşeleri için ikinci
+  renk. Çift renkli çerçeveler buradan geliyor; `glow` açıkken vurgu rengi de koyulaşır.
+- `cyberpunk` teması — yüksek kontrastlı palet, `target` biçimi, beyaz vurgu.
+- Yeni tema alanları: `dash_length`, `gap_length`, `arm_length`, `center_size`,
+  `edge_thickness`. Geçerli biçimler `cvflair.BOX_STYLES` içinde.
+- Playground yedi biçimi de destekliyor; ilgili ayarlar seçilen biçime göre görünüyor.
+
+### Not
+Bu sürüm, "çizim matematiği yeniden yazılmaz" ilkesinden bilinçli bir sapma: kesikli,
+ayraç, artı ve hedef biçimleri `supervision`'da yok, bu dört annotator cvflair'in bakım
+sorumluluğunda. Kutu/yuvarlak/köşe biçimleri hâlâ doğrudan `supervision`'dan geliyor.
+
+### Eklendi (playground)
 - [Tema playground](https://kbycode.github.io/cvflair/) (`docs/index.html`): temalar
   tarayıcıda ayarlanıyor, hazır `Theme(...)` kodu kopyalanabiliyor. Sunucu, hesap ve
   kayıt yok; ayarlar query string ile taşınıyor, isteğe bağlı kamera önizlemesi

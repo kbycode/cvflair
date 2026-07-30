@@ -13,16 +13,27 @@ wraps the camera loop, so the everyday case fits in three lines::
 
 from __future__ import annotations
 
+from .annotators import (
+    BracketBoxAnnotator,
+    CrosshairAnnotator,
+    DashedBoxAnnotator,
+    TargetBoxAnnotator,
+)
 from .camera import Camera, CameraError
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
-from .themes import Theme, available_themes, get_theme
+from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
+    "BOX_STYLES",
+    "BracketBoxAnnotator",
     "Camera",
     "CameraError",
+    "CrosshairAnnotator",
+    "DashedBoxAnnotator",
     "Detector",
+    "TargetBoxAnnotator",
     "Theme",
     "UltralyticsDetector",
     "available_themes",

@@ -124,8 +124,42 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 | `minimal` | ince beyaz çerçeve, sade etiket — ekran kaydı ve profesyonel demo için | ![minimal](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-minimal.png) |
 | `neon` | sınıf başına canlı renk, yuvarlak köşe, koyu hâle ile parlama hissi | ![neon](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-neon.png) |
 | `pastel` | yumuşak tonlar, geniş yuvarlama, koyu etiket yazısı — atölye/projeksiyon | ![pastel](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-pastel.png) |
+| `cyberpunk` | ince çerçeve + kalın beyaz köşeler, yüksek kontrast — hedef kilitleme görünümü | ![cyberpunk](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-cyberpunk.png) |
 
-Yol haritasındaki `cyberpunk` ve `hud` temaları Faz 2'de gelecek.
+### Çerçeve biçimleri
+
+![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
+
+`box_style` yedi değerden birini alır:
+
+| Değer | Görünüm | Ayarları |
+|---|---|---|
+| `box` | düz dikdörtgen | `thickness` |
+| `round` | yuvarlak köşeli dikdörtgen | `roundness` |
+| `corner` | yalnızca köşe çentikleri | `corner_length` |
+| `dashed` | kesikli çerçeve | `dash_length`, `gap_length` |
+| `bracket` | yuvarlak dirsekli köşe ayracı (köşe + yuvarlak karışımı) | `corner_length`, `roundness` |
+| `crosshair` | kenar ortası çentikleri + merkez artısı | `arm_length`, `center_size` |
+| `target` | ince çerçeve + kalın köşeler | `corner_length`, `edge_thickness` |
+
+İlk üçü doğrudan `supervision` annotator'larıdır. Kalan dördü `cvflair.annotators`
+içinde tanımlıdır: `supervision`'ın `BaseAnnotator` arayüzünü ve renk çözümlemesini
+kullanırlar, yani palet ve `ColorLookup` davranışı aynıdır — yalnızca çizgi geometrisi
+farklıdır.
+
+`bracket`, `crosshair` ve `target` ikinci bir renk kabul eder; dirsekler, merkez artısı
+ve köşeler o renge geçer:
+
+```python
+theme = Theme(
+    palette=sv.ColorPalette.from_hex(["#00F0FF"]),
+    accent_palette=sv.ColorPalette.from_hex(["#FF206E"]),
+    box_style="target",
+    thickness=3,
+)
+```
+
+Yol haritasındaki `hud` teması (FPS/skor paneli) Faz 3'te gelecek.
 
 Özel bir tema, `Theme` doğrudan kurulup `Camera`'ya verilerek tanımlanır:
 
@@ -136,7 +170,7 @@ from cvflair import Camera, Theme
 my_theme = Theme(
     name="my-theme",
     palette=sv.ColorPalette.from_hex(["#39FF14", "#FF00E5"]),
-    box_style="corner",     # "box" | "round" | "corner"
+    box_style="corner",     # bkz. Çerçeve biçimleri
     thickness=2,
     glow=True,
     text_scale=0.6,
@@ -182,8 +216,10 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 - **Annotator'lar bir kere kurulur.** `Theme` nesnesi oluşturulurken `supervision`
   annotator'ları hazırlanır ve her karede yeniden kullanılır — döngü içinde annotator
   kurmak bu tür işlerde en sık görülen gereksiz maliyettir.
-- **Çizim matematiği yeniden yazılmadı.** Her piksel `supervision` tarafından çiziliyor;
-  cvflair sadece yapılandırma ve akış katmanı.
+- **Çizim büyük ölçüde `supervision`'a ait.** Kutu, yuvarlak kutu, köşe ve etiket
+  çizimi doğrudan oradan geliyor. `dashed`, `bracket`, `crosshair` ve `target`
+  biçimleri `supervision`'da yok; onlar cvflair'de, ama yine `BaseAnnotator`
+  arayüzü ve aynı renk çözümlemesi üzerinden.
 - **Model paketin dışında.** `stream(model=...)` verilen şeyi bir çağrılabilire çevirir;
   ağırlıklar ilk yinelemede yüklenir. Hiçbir model kodu veya ağırlığı pakete gömülü değil.
 

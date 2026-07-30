@@ -18,9 +18,20 @@ from typing import Literal
 import numpy as np
 import supervision as sv
 
-__all__ = ["Theme", "get_theme", "available_themes", "BoxStyle"]
+from .annotators import (
+    BracketBoxAnnotator,
+    CrosshairAnnotator,
+    DashedBoxAnnotator,
+    TargetBoxAnnotator,
+)
 
-BoxStyle = Literal["box", "round", "corner"]
+__all__ = ["Theme", "get_theme", "available_themes", "BoxStyle", "BOX_STYLES"]
+
+BoxStyle = Literal["box", "round", "corner", "dashed", "bracket", "crosshair", "target"]
+
+#: Every accepted ``box_style``. The first three come from ``supervision``, the
+#: rest from :mod:`cvflair.annotators`.
+BOX_STYLES: tuple[str, ...] = ("box", "round", "corner", "dashed", "bracket", "crosshair", "target")
 
 
 def _dim(color: sv.Color, factor: float) -> sv.Color:
@@ -54,12 +65,23 @@ class Theme:
 
     name: str = "custom"
     palette: sv.ColorPalette = field(default_factory=lambda: sv.ColorPalette.DEFAULT)
+    #: Second colour for the parts meant to stand out: bracket elbows, the
+    #: reticle centre, target corners. ``None`` keeps everything one colour.
+    accent_palette: sv.ColorPalette | None = None
     box_style: BoxStyle = "box"
     thickness: int = 2
-    #: Corner rounding for ``box_style="round"``, in (0, 1].
+    #: Corner rounding for ``box_style="round"`` and ``"bracket"``, in (0, 1].
     roundness: float = 0.5
-    #: Corner arm length in pixels for ``box_style="corner"``.
+    #: Corner arm length in pixels for ``"corner"``, ``"bracket"`` and ``"target"``.
     corner_length: int = 20
+    #: Dash geometry for ``box_style="dashed"``.
+    dash_length: int = 12
+    gap_length: int = 8
+    #: Reticle geometry for ``box_style="crosshair"``.
+    arm_length: int = 18
+    center_size: int = 10
+    #: Rectangle weight behind the corners of ``box_style="target"``.
+    edge_thickness: int = 1
     #: Draw a dimmed, thicker box behind the main one to fake a glow.
     glow: bool = False
     glow_thickness: int = 5
@@ -73,9 +95,9 @@ class Theme:
     color_lookup: sv.ColorLookup = sv.ColorLookup.CLASS
 
     def __post_init__(self) -> None:
-        if self.box_style not in ("box", "round", "corner"):
+        if self.box_style not in BOX_STYLES:
             raise ValueError(
-                f"Unknown box_style {self.box_style!r}. Use 'box', 'round' or 'corner'."
+                f"Unknown box_style {self.box_style!r}. Use one of: {', '.join(BOX_STYLES)}."
             )
         if self.thickness < 1:
             raise ValueError(f"thickness must be >= 1, got {self.thickness}.")
@@ -86,6 +108,11 @@ class Theme:
             self._build_box_annotator(
                 palette=_dim_palette(self.palette, self.glow_dim),
                 thickness=self.thickness + self.glow_thickness,
+                accent=(
+                    _dim_palette(self.accent_palette, self.glow_dim)
+                    if self.accent_palette is not None
+                    else None
+                ),
             )
             if self.glow
             else None
@@ -93,6 +120,7 @@ class Theme:
         self._box_annotator = self._build_box_annotator(
             palette=self.palette,
             thickness=self.thickness,
+            accent=self.accent_palette,
         )
         self._label_annotator = (
             sv.LabelAnnotator(
@@ -108,26 +136,47 @@ class Theme:
             else None
         )
 
-    def _build_box_annotator(self, palette: sv.ColorPalette, thickness: int):
+    def _build_box_annotator(
+        self,
+        palette: sv.ColorPalette,
+        thickness: int,
+        accent: sv.ColorPalette | None = None,
+    ):
+        common = {"color": palette, "thickness": thickness, "color_lookup": self.color_lookup}
+
         if self.box_style == "round":
-            return sv.RoundBoxAnnotator(
-                color=palette,
-                thickness=thickness,
-                roundness=self.roundness,
-                color_lookup=self.color_lookup,
-            )
+            return sv.RoundBoxAnnotator(**common, roundness=self.roundness)
         if self.box_style == "corner":
-            return sv.BoxCornerAnnotator(
-                color=palette,
-                thickness=thickness,
-                corner_length=self.corner_length,
-                color_lookup=self.color_lookup,
+            return sv.BoxCornerAnnotator(**common, corner_length=self.corner_length)
+        if self.box_style == "dashed":
+            return DashedBoxAnnotator(
+                **common,
+                accent_color=accent,
+                dash_length=self.dash_length,
+                gap_length=self.gap_length,
             )
-        return sv.BoxAnnotator(
-            color=palette,
-            thickness=thickness,
-            color_lookup=self.color_lookup,
-        )
+        if self.box_style == "bracket":
+            return BracketBoxAnnotator(
+                **common,
+                accent_color=accent,
+                corner_length=self.corner_length,
+                roundness=self.roundness,
+            )
+        if self.box_style == "crosshair":
+            return CrosshairAnnotator(
+                **common,
+                accent_color=accent,
+                arm_length=self.arm_length,
+                center_size=self.center_size,
+            )
+        if self.box_style == "target":
+            return TargetBoxAnnotator(
+                **common,
+                accent_color=accent,
+                corner_length=self.corner_length,
+                edge_thickness=self.edge_thickness,
+            )
+        return sv.BoxAnnotator(**common)
 
     def annotate(
         self,
@@ -202,10 +251,27 @@ def _pastel() -> Theme:
     )
 
 
+def _cyberpunk() -> Theme:
+    """High contrast target lock: thin rectangle, heavy white corners."""
+    return Theme(
+        name="cyberpunk",
+        palette=sv.ColorPalette.from_hex(["#00F0FF", "#FF206E", "#FFD400", "#8AFF00"]),
+        accent_palette=sv.ColorPalette.from_hex(["#FFFFFF"]),
+        box_style="target",
+        thickness=3,
+        corner_length=26,
+        edge_thickness=1,
+        text_color=sv.Color.BLACK,
+        text_scale=0.45,
+        text_padding=6,
+    )
+
+
 _THEMES: dict[str, Callable[[], Theme]] = {
     "minimal": _minimal,
     "neon": _neon,
     "pastel": _pastel,
+    "cyberpunk": _cyberpunk,
 }
 
 

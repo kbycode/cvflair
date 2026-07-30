@@ -91,8 +91,8 @@
   button:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); color: #10240a; border-color: var(--accent); font-weight: 600; }
 
-  .segmented { display: flex; gap: 6px; }
-  .segmented button { flex: 1; padding: 7px 4px; font-size: 13px; }
+  .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .segmented button { padding: 7px 4px; font-size: 13px; }
   .segmented button[aria-pressed="true"] {
     background: var(--panel-2);
     border-color: var(--accent);
@@ -164,6 +164,7 @@
           <option value="minimal">minimal</option>
           <option value="neon" selected>neon</option>
           <option value="pastel">pastel</option>
+          <option value="cyberpunk">cyberpunk</option>
           <option value="custom">özel</option>
         </select>
       </div>
@@ -181,19 +182,50 @@
           <button data-value="box" type="button">düz</button>
           <button data-value="round" type="button">yuvarlak</button>
           <button data-value="corner" type="button">köşe</button>
+          <button data-value="dashed" type="button">kesikli</button>
+          <button data-value="bracket" type="button">ayraç</button>
+          <button data-value="crosshair" type="button">artı</button>
+          <button data-value="target" type="button">hedef</button>
         </div>
       </div>
       <div class="row">
         <label class="title" for="thickness">Kalınlık <b id="thicknessOut"></b></label>
         <input type="range" id="thickness" min="1" max="10" step="1">
       </div>
-      <div class="row" data-only="round">
+      <div class="row" data-only="round bracket">
         <label class="title" for="roundness">Yuvarlama <b id="roundnessOut"></b></label>
         <input type="range" id="roundness" min="0.05" max="1" step="0.05">
       </div>
-      <div class="row" data-only="corner">
+      <div class="row" data-only="corner bracket target">
         <label class="title" for="cornerLength">Köşe uzunluğu <b id="cornerLengthOut"></b></label>
         <input type="range" id="cornerLength" min="5" max="60" step="1">
+      </div>
+      <div class="row" data-only="dashed">
+        <label class="title" for="dashLength">Çizgi boyu <b id="dashLengthOut"></b></label>
+        <input type="range" id="dashLength" min="2" max="40" step="1">
+      </div>
+      <div class="row" data-only="dashed">
+        <label class="title" for="gapLength">Boşluk <b id="gapLengthOut"></b></label>
+        <input type="range" id="gapLength" min="2" max="40" step="1">
+      </div>
+      <div class="row" data-only="crosshair">
+        <label class="title" for="armLength">Kol uzunluğu <b id="armLengthOut"></b></label>
+        <input type="range" id="armLength" min="4" max="60" step="1">
+      </div>
+      <div class="row" data-only="crosshair">
+        <label class="title" for="centerSize">Merkez artı <b id="centerSizeOut"></b></label>
+        <input type="range" id="centerSize" min="0" max="40" step="1">
+      </div>
+      <div class="row" data-only="target">
+        <label class="title" for="edgeThickness">Çerçeve kalınlığı <b id="edgeThicknessOut"></b></label>
+        <input type="range" id="edgeThickness" min="1" max="6" step="1">
+      </div>
+      <div class="row" data-only="bracket crosshair target">
+        <label class="switch"><input type="checkbox" id="accentOn"> İkinci renk (vurgu)</label>
+      </div>
+      <div class="row" data-only="accent">
+        <label class="title" for="accent">Vurgu rengi <b id="accentOut"></b></label>
+        <input type="color" id="accent">
       </div>
     </div>
 
@@ -277,42 +309,51 @@
 <script>
 "use strict";
 
-// --- Temalar: src/cvflair/themes.py içindeki preset'lerin birebir karşılığı ---
-const PRESETS = {
-  minimal: {
-    palette: ["#ffffff"],
-    boxStyle: "box", thickness: 1, roundness: 0.5, cornerLength: 20,
-    glow: false, glowThickness: 5, glowDim: 0.45,
-    labels: true, textColor: "#000000", textScale: 0.45, textPadding: 4, labelRadius: 0,
-  },
-  neon: {
-    palette: ["#39ff14", "#ff00e5", "#00e5ff", "#ffe600", "#ff2d55", "#7b5cff"],
-    boxStyle: "round", thickness: 3, roundness: 0.6, cornerLength: 20,
-    glow: true, glowThickness: 6, glowDim: 0.4,
-    labels: true, textColor: "#000000", textScale: 0.5, textPadding: 8, labelRadius: 6,
-  },
-  pastel: {
-    palette: ["#ffadad", "#a0c4ff", "#b9fbc0", "#ffd6a5", "#cdb4db", "#9bf6ff"],
-    boxStyle: "round", thickness: 2, roundness: 0.8, cornerLength: 20,
-    glow: false, glowThickness: 5, glowDim: 0.45,
-    labels: true, textColor: "#2e2e2e", textScale: 0.45, textPadding: 8, labelRadius: 10,
-  },
-};
-
 // Theme dataclass varsayılanları: koda yalnızca bunlardan farklı olanlar yazılır.
 const DEFAULTS = {
+  palette: ["#ffffff"], accent: null,
   boxStyle: "box", thickness: 2, roundness: 0.5, cornerLength: 20,
+  dashLength: 12, gapLength: 8, armLength: 18, centerSize: 10, edgeThickness: 1,
   glow: false, glowThickness: 5, glowDim: 0.45,
   labels: true, textColor: "#000000", textScale: 0.5, textPadding: 6, labelRadius: 0,
 };
 
+// --- Temalar: src/cvflair/themes.py içindeki preset'lerin birebir karşılığı ---
+const PRESETS = {
+  minimal: {
+    ...DEFAULTS,
+    palette: ["#ffffff"], thickness: 1, textScale: 0.45, textPadding: 4,
+  },
+  neon: {
+    ...DEFAULTS,
+    palette: ["#39ff14", "#ff00e5", "#00e5ff", "#ffe600", "#ff2d55", "#7b5cff"],
+    boxStyle: "round", thickness: 3, roundness: 0.6,
+    glow: true, glowThickness: 6, glowDim: 0.4,
+    textPadding: 8, labelRadius: 6,
+  },
+  pastel: {
+    ...DEFAULTS,
+    palette: ["#ffadad", "#a0c4ff", "#b9fbc0", "#ffd6a5", "#cdb4db", "#9bf6ff"],
+    boxStyle: "round", thickness: 2, roundness: 0.8,
+    textColor: "#2e2e2e", textScale: 0.45, textPadding: 8, labelRadius: 10,
+  },
+  cyberpunk: {
+    ...DEFAULTS,
+    palette: ["#00f0ff", "#ff206e", "#ffd400", "#8aff00"], accent: "#ffffff",
+    boxStyle: "target", thickness: 3, cornerLength: 26, edgeThickness: 1,
+    textScale: 0.45, textPadding: 6,
+  },
+};
+
 // URL kısaltmaları: yalnızca sayı, hex ve sabit sözcükler taşınır.
 const URL_KEYS = {
-  p: "palette", s: "boxStyle", t: "thickness", r: "roundness", c: "cornerLength",
+  p: "palette", a: "accent", s: "boxStyle", t: "thickness", r: "roundness", c: "cornerLength",
+  dl: "dashLength", gl: "gapLength", al: "armLength", cs: "centerSize", et: "edgeThickness",
   g: "glow", gt: "glowThickness", gd: "glowDim",
   l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
 };
-const BOX_STYLES = ["box", "round", "corner"];
+const BOX_STYLES = ["box", "round", "corner", "dashed", "bracket", "crosshair", "target"];
+const ACCENT_STYLES = ["bracket", "crosshair", "target"];
 const MAX_COLORS = 8;
 
 // Sahne figürleri. Kutular bu figürlerin gerçek sınırlarından hesaplanır, elle
@@ -381,6 +422,8 @@ function readUrl() {
       if (BOX_STYLES.includes(raw)) state.boxStyle = raw;
     } else if (field === "textColor") {
       if (isHex(raw)) state.textColor = normaliseHex(raw);
+    } else if (field === "accent") {
+      state.accent = isHex(raw) ? normaliseHex(raw) : null;
     } else if (field === "glow" || field === "labels") {
       state[field] = raw === "1" || raw === "true";
     } else {
@@ -396,6 +439,11 @@ function clampState() {
   state.thickness = clamp(Math.round(state.thickness), 1, 10);
   state.roundness = clamp(state.roundness, 0.05, 1);
   state.cornerLength = clamp(Math.round(state.cornerLength), 5, 60);
+  state.dashLength = clamp(Math.round(state.dashLength), 2, 40);
+  state.gapLength = clamp(Math.round(state.gapLength), 2, 40);
+  state.armLength = clamp(Math.round(state.armLength), 4, 60);
+  state.centerSize = clamp(Math.round(state.centerSize), 0, 40);
+  state.edgeThickness = clamp(Math.round(state.edgeThickness), 1, 6);
   state.glowThickness = clamp(Math.round(state.glowThickness), 1, 20);
   state.glowDim = clamp(state.glowDim, 0.1, 0.9);
   state.textScale = clamp(state.textScale, 0.3, 1.2);
@@ -416,8 +464,20 @@ function shareUrl() {
   params.set("p", state.palette.map((c) => c.slice(1)).join(","));
   params.set("s", state.boxStyle);
   params.set("t", String(state.thickness));
-  if (state.boxStyle === "round") params.set("r", String(state.roundness));
-  if (state.boxStyle === "corner") params.set("c", String(state.cornerLength));
+  if (usesAccent()) params.set("a", state.accent.slice(1));
+  if (["round", "bracket"].includes(state.boxStyle)) params.set("r", String(state.roundness));
+  if (["corner", "bracket", "target"].includes(state.boxStyle)) {
+    params.set("c", String(state.cornerLength));
+  }
+  if (state.boxStyle === "dashed") {
+    params.set("dl", String(state.dashLength));
+    params.set("gl", String(state.gapLength));
+  }
+  if (state.boxStyle === "crosshair") {
+    params.set("al", String(state.armLength));
+    params.set("cs", String(state.centerSize));
+  }
+  if (state.boxStyle === "target") params.set("et", String(state.edgeThickness));
   params.set("g", state.glow ? "1" : "0");
   if (state.glow) {
     params.set("gt", String(state.glowThickness));
@@ -435,19 +495,50 @@ function shareUrl() {
 
 // --- Python kodu -----------------------------------------------------------
 
+function usesAccent() {
+  return Boolean(state.accent) && ACCENT_STYLES.includes(state.boxStyle);
+}
+
 function pythonCode() {
   const lines = [];
   const colors = state.palette.map((c) => '"' + c.toUpperCase() + '"').join(", ");
   lines.push('    name="playground",');
   lines.push("    palette=sv.ColorPalette.from_hex([" + colors + "]),");
+  if (usesAccent()) {
+    lines.push(
+      '    accent_palette=sv.ColorPalette.from_hex(["' + state.accent.toUpperCase() + '"]),'
+    );
+  }
 
   if (state.boxStyle !== DEFAULTS.boxStyle) lines.push('    box_style="' + state.boxStyle + '",');
   if (state.thickness !== DEFAULTS.thickness) lines.push("    thickness=" + state.thickness + ",");
-  if (state.boxStyle === "round" && state.roundness !== DEFAULTS.roundness) {
+  if (["round", "bracket"].includes(state.boxStyle) && state.roundness !== DEFAULTS.roundness) {
     lines.push("    roundness=" + state.roundness + ",");
   }
-  if (state.boxStyle === "corner" && state.cornerLength !== DEFAULTS.cornerLength) {
+  if (
+    ["corner", "bracket", "target"].includes(state.boxStyle)
+    && state.cornerLength !== DEFAULTS.cornerLength
+  ) {
     lines.push("    corner_length=" + state.cornerLength + ",");
+  }
+  if (state.boxStyle === "dashed") {
+    if (state.dashLength !== DEFAULTS.dashLength) {
+      lines.push("    dash_length=" + state.dashLength + ",");
+    }
+    if (state.gapLength !== DEFAULTS.gapLength) {
+      lines.push("    gap_length=" + state.gapLength + ",");
+    }
+  }
+  if (state.boxStyle === "crosshair") {
+    if (state.armLength !== DEFAULTS.armLength) {
+      lines.push("    arm_length=" + state.armLength + ",");
+    }
+    if (state.centerSize !== DEFAULTS.centerSize) {
+      lines.push("    center_size=" + state.centerSize + ",");
+    }
+  }
+  if (state.boxStyle === "target" && state.edgeThickness !== DEFAULTS.edgeThickness) {
+    lines.push("    edge_thickness=" + state.edgeThickness + ",");
   }
   if (state.glow) {
     lines.push("    glow=True,");
@@ -498,26 +589,31 @@ function roundedPath(x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function strokeBox(box, colour, thickness) {
+const CORNERS = [[0, 1, 1, 1], [2, 1, -1, 1], [0, 3, 1, -1], [2, 3, -1, -1]];
+
+function strokeBox(box, colour, thickness, accent) {
   const [x1, y1, x2, y2] = box;
   const width = x2 - x1;
   const height = y2 - y1;
+  const shortSide = Math.min(width, height);
   ctx.strokeStyle = colour;
   ctx.lineWidth = thickness;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
+  ctx.setLineDash([]);
 
   if (state.boxStyle === "round") {
-    roundedPath(x1, y1, width, height, state.roundness * Math.min(width, height) / 2);
+    roundedPath(x1, y1, width, height, state.roundness * shortSide / 2);
     ctx.stroke();
     return;
   }
+
   if (state.boxStyle === "corner") {
-    const arm = Math.min(state.cornerLength, width / 2, height / 2);
+    const arm = Math.min(state.cornerLength, shortSide / 2);
     ctx.beginPath();
-    for (const [cx, cy, dx, dy] of [
-      [x1, y1, 1, 1], [x2, y1, -1, 1], [x1, y2, 1, -1], [x2, y2, -1, -1],
-    ]) {
+    for (const [ix, iy, dx, dy] of CORNERS) {
+      const cx = box[ix];
+      const cy = box[iy];
       ctx.moveTo(cx + dx * arm, cy);
       ctx.lineTo(cx, cy);
       ctx.lineTo(cx, cy + dy * arm);
@@ -525,6 +621,84 @@ function strokeBox(box, colour, thickness) {
     ctx.stroke();
     return;
   }
+
+  if (state.boxStyle === "dashed") {
+    ctx.lineCap = "butt";
+    ctx.setLineDash([state.dashLength, state.gapLength]);
+    ctx.strokeRect(x1, y1, width, height);
+    ctx.setLineDash([]);
+    return;
+  }
+
+  if (state.boxStyle === "bracket") {
+    // Yay kolun en fazla %60'ını yer; kalanı düz parça olarak çizilir (Python ile aynı).
+    const arm = Math.min(state.cornerLength, shortSide / 2);
+    const radius = Math.min(state.roundness * shortSide / 2, arm * 0.6);
+    for (const [ix, iy, dx, dy] of CORNERS) {
+      const cx = box[ix];
+      const cy = box[iy];
+      const start = dy < 0 ? (dx > 0 ? 0.5 : 0) : (dx > 0 ? 1 : 1.5);
+      ctx.strokeStyle = accent;
+      ctx.beginPath();
+      ctx.arc(
+        cx + dx * radius, cy + dy * radius, radius,
+        (start + 1) * Math.PI, (start + 1.5) * Math.PI,
+      );
+      ctx.stroke();
+
+      ctx.strokeStyle = colour;
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * radius, cy);
+      ctx.lineTo(cx + dx * arm, cy);
+      ctx.moveTo(cx, cy + dy * radius);
+      ctx.lineTo(cx, cy + dy * arm);
+      ctx.stroke();
+    }
+    return;
+  }
+
+  if (state.boxStyle === "crosshair") {
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    const armX = Math.min(state.armLength, width / 2);
+    const armY = Math.min(state.armLength, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(cx - armX, y1); ctx.lineTo(cx + armX, y1);
+    ctx.moveTo(cx - armX, y2); ctx.lineTo(cx + armX, y2);
+    ctx.moveTo(x1, cy - armY); ctx.lineTo(x1, cy + armY);
+    ctx.moveTo(x2, cy - armY); ctx.lineTo(x2, cy + armY);
+    ctx.stroke();
+
+    if (state.centerSize > 0) {
+      const half = state.centerSize / 2;
+      ctx.strokeStyle = accent;
+      ctx.beginPath();
+      ctx.moveTo(cx - half, cy); ctx.lineTo(cx + half, cy);
+      ctx.moveTo(cx, cy - half); ctx.lineTo(cx, cy + half);
+      ctx.stroke();
+    }
+    return;
+  }
+
+  if (state.boxStyle === "target") {
+    ctx.lineWidth = state.edgeThickness;
+    ctx.strokeRect(x1, y1, width, height);
+
+    const arm = Math.min(state.cornerLength, shortSide / 2);
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = accent;
+    ctx.beginPath();
+    for (const [ix, iy, dx, dy] of CORNERS) {
+      const cx = box[ix];
+      const cy = box[iy];
+      ctx.moveTo(cx + dx * arm, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * arm);
+    }
+    ctx.stroke();
+    return;
+  }
+
   ctx.strokeRect(x1, y1, width, height);
 }
 
@@ -784,9 +958,15 @@ function render(now = performance.now()) {
 
   frames.forEach((frame, index) => {
     const colour = state.palette[index % state.palette.length];
+    const accent = usesAccent() ? state.accent : colour;
     const box = frame.box;
-    if (state.glow) strokeBox(box, dim(colour, state.glowDim), state.thickness + state.glowThickness);
-    strokeBox(box, colour, state.thickness);
+    if (state.glow) {
+      strokeBox(
+        box, dim(colour, state.glowDim), state.thickness + state.glowThickness,
+        dim(accent, state.glowDim),
+      );
+    }
+    strokeBox(box, colour, state.thickness, accent);
     if (state.labels) {
       const score = frame.actor.confidence(frame.time).toFixed(2);
       drawLabel(box, colour, frame.actor.label + " " + score);
@@ -799,9 +979,17 @@ function render(now = performance.now()) {
 // --- arayüz ----------------------------------------------------------------
 
 const SLIDERS = [
-  "thickness", "roundness", "cornerLength",
+  "thickness", "roundness", "cornerLength", "dashLength", "gapLength",
+  "armLength", "centerSize", "edgeThickness",
   "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius",
 ];
+
+function rowIsVisible(token) {
+  if (token === "glow") return state.glow;
+  if (token === "labels") return state.labels;
+  if (token === "accent") return usesAccent();
+  return state.boxStyle === token;
+}
 
 function syncControls() {
   document.getElementById("preset").value = preset;
@@ -814,15 +1002,15 @@ function syncControls() {
   document.getElementById("labels").checked = state.labels;
   document.getElementById("textColor").value = state.textColor;
   document.getElementById("textColorOut").textContent = state.textColor;
+  document.getElementById("accentOn").checked = Boolean(state.accent);
+  document.getElementById("accent").value = state.accent || "#ffffff";
+  document.getElementById("accentOut").textContent = state.accent || "";
 
   for (const button of document.querySelectorAll("#boxStyle button")) {
     button.setAttribute("aria-pressed", String(button.dataset.value === state.boxStyle));
   }
   for (const row of document.querySelectorAll("[data-only]")) {
-    const need = row.dataset.only;
-    const visible = need === "glow" ? state.glow
-      : need === "labels" ? state.labels
-      : state.boxStyle === need;
+    const visible = row.dataset.only.split(" ").some(rowIsVisible);
     row.style.display = visible ? "" : "none";
   }
 
@@ -896,6 +1084,14 @@ function bindControls() {
   }
   document.getElementById("textColor").addEventListener("input", (event) => {
     update(() => { state.textColor = event.target.value; });
+  });
+  document.getElementById("accentOn").addEventListener("change", (event) => {
+    update(() => {
+      state.accent = event.target.checked ? document.getElementById("accent").value : null;
+    });
+  });
+  document.getElementById("accent").addEventListener("input", (event) => {
+    update(() => { state.accent = event.target.value; });
   });
   for (const button of document.querySelectorAll("#boxStyle button")) {
     button.addEventListener("click", () => update(() => { state.boxStyle = button.dataset.value; }));
