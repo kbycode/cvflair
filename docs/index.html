@@ -221,7 +221,7 @@
         <label class="title" for="edgeThickness">Çerçeve kalınlığı <b id="edgeThicknessOut"></b></label>
         <input type="range" id="edgeThickness" min="1" max="6" step="1">
       </div>
-      <div class="row" data-only="bracket crosshair target">
+      <div class="row" data-only="dashed_corner bracket crosshair target">
         <label class="switch"><input type="checkbox" id="accentOn"> İkinci renk (vurgu)</label>
       </div>
       <div class="row" data-only="accent">
@@ -358,7 +358,7 @@ const BOX_STYLES = [
 ];
 const CORNER_STYLES = ["corner", "dashed_corner", "bracket", "target"];
 const DASH_STYLES = ["dashed", "dashed_corner"];
-const ACCENT_STYLES = ["bracket", "crosshair", "target"];
+const ACCENT_STYLES = ["dashed_corner", "bracket", "crosshair", "target"];
 const MAX_COLORS = 8;
 
 // Sahne figürleri. Kutular bu figürlerin gerçek sınırlarından hesaplanır, elle
@@ -631,19 +631,24 @@ function strokeBox(box, colour, thickness, accent) {
   }
 
   if (state.boxStyle === "dashed_corner") {
-    const arm = Math.min(state.cornerLength, shortSide / 2);
+    // Önce kesikli çerçevenin tamamı, sonra üstüne dolu köşe ayraçları.
     ctx.lineCap = "butt";
     ctx.setLineDash([state.dashLength, state.gapLength]);
+    ctx.strokeRect(x1, y1, width, height);
+    ctx.setLineDash([]);
+
+    const arm = Math.min(state.cornerLength, shortSide / 2);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = accent;
     ctx.beginPath();
     for (const [ix, iy, dx, dy] of CORNERS) {
       const cx = box[ix];
       const cy = box[iy];
-      // Her kol köşeden dışa doğru çizilir ki kesikler köşede hizalı başlasın.
-      ctx.moveTo(cx, cy); ctx.lineTo(cx + dx * arm, cy);
-      ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + dy * arm);
+      ctx.moveTo(cx + dx * arm, cy);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx, cy + dy * arm);
     }
     ctx.stroke();
-    ctx.setLineDash([]);
     return;
   }
 

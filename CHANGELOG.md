@@ -7,13 +7,14 @@ Paket henüz PyPI'da yayınlanmadı; sürümler depo içi kilometre taşlarıdı
 
 ### Eklendi
 - Beş yeni çerçeve biçimi (`cvflair.annotators`): `dashed` (kesikli), `dashed_corner`
-  (kesikli çizgiyle köşe çentikleri), `bracket` (yuvarlak dirsekli köşe ayracı),
+  (kesikli çerçeve + üstüne dolu köşe ayraçları), `bracket` (yuvarlak dirsekli köşe ayracı),
   `crosshair` (kenar ortası çentikleri + merkez artı), `target` (ince çerçeve + kalın
   köşeler). Hepsi `supervision`'ın `BaseAnnotator`
   arayüzünü ve `resolve_color` renk çözümlemesini kullanıyor, yani palet ve
   `ColorLookup` davranışı yerleşik annotator'larla aynı.
-- `Theme.accent_palette`: ayraç dirsekleri, artı merkezi ve hedef köşeleri için ikinci
-  renk. Çift renkli çerçeveler buradan geliyor; `glow` açıkken vurgu rengi de koyulaşır.
+- `Theme.accent_palette`: köşe ayraçları, ayraç dirsekleri, artı merkezi ve hedef
+  köşeleri için ikinci renk. Hibrit biçimlerin iki katmanı bununla ayrışıyor;
+  `glow` açıkken vurgu rengi de koyulaşır.
 - `cyberpunk` teması — yüksek kontrastlı palet, `target` biçimi, beyaz vurgu.
 - Yeni tema alanları: `dash_length`, `gap_length`, `arm_length`, `center_size`,
   `edge_thickness`. Geçerli biçimler `cvflair.BOX_STYLES` içinde.

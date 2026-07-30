@@ -124,10 +124,12 @@ class DashedBoxAnnotator(_OutlineAnnotator):
 
 class DashedCornerAnnotator(_OutlineAnnotator):
     """
-    Corner arms drawn as dashes -- the corner and dashed styles combined.
+    The dashed frame with solid corner brackets laid over it.
 
-    Only the corners are drawn, and each arm is broken into dashes, so the frame
-    stays light while still marking where the detection is.
+    Both styles are drawn: the full rectangle as dashes in the detection colour,
+    then the corner arms as unbroken lines. With ``accent_color`` set the corners
+    take the second colour, which is what makes the hybrid readable -- a dashed
+    outline that still has hard, solid corners marking the box.
     """
 
     def __init__(
@@ -149,13 +151,16 @@ class DashedCornerAnnotator(_OutlineAnnotator):
         if width <= 0 or height <= 0:
             return
 
+        corners = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+        for start, end in zip(corners, corners[1:] + corners[:1], strict=True):
+            _dashed_line(
+                scene, start, end, colour, self.thickness, self.dash_length, self.gap_length
+            )
+
         arm = int(min(self.corner_length, min(width, height) / 2))
         for cx, cy, dx, dy in ((x1, y1, 1, 1), (x2, y1, -1, 1), (x1, y2, 1, -1), (x2, y2, -1, -1)):
-            for end in ((cx + dx * arm, cy), (cx, cy + dy * arm)):
-                _dashed_line(
-                    scene, (cx, cy), end, colour, self.thickness,
-                    self.dash_length, self.gap_length,
-                )
+            cv2.line(scene, (cx, cy), (cx + dx * arm, cy), accent, self.thickness)
+            cv2.line(scene, (cx, cy), (cx, cy + dy * arm), accent, self.thickness)
 
 
 class BracketBoxAnnotator(_OutlineAnnotator):

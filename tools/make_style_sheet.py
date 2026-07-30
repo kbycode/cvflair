@@ -59,7 +59,8 @@ def cell(style: str, accent: bool) -> np.ndarray:
 
 def main() -> None:
     cells = [cell(style, accent=False) for style in BOX_STYLES]
-    cells += [cell(style, accent=True) for style in ("bracket", "crosshair", "target")]
+    accented = ("dashed_corner", "bracket", "crosshair", "target")
+    cells += [cell(style, accent=True) for style in accented]
     while len(cells) % COLUMNS:
         cells.append(np.full((CELL_H, CELL_W, 3), 20, dtype=np.uint8))
 

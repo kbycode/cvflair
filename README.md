@@ -138,7 +138,7 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 | `round` | yuvarlak köşeli dikdörtgen | `roundness` |
 | `corner` | yalnızca köşe çentikleri | `corner_length` |
 | `dashed` | kesikli çerçeve | `dash_length`, `gap_length` |
-| `dashed_corner` | kesikli çizgiyle çizilmiş köşe çentikleri (köşe + kesikli karışımı) | `corner_length`, `dash_length`, `gap_length` |
+| `dashed_corner` | kesikli çerçevenin üstüne dolu köşe ayraçları (kesikli + köşe karışımı) | `corner_length`, `dash_length`, `gap_length` |
 | `bracket` | yuvarlak dirsekli köşe ayracı (köşe + yuvarlak karışımı) | `corner_length`, `roundness` |
 | `crosshair` | kenar ortası çentikleri + merkez artısı | `arm_length`, `center_size` |
 | `target` | ince çerçeve + kalın köşeler | `corner_length`, `edge_thickness` |
@@ -148,8 +148,9 @@ içinde tanımlıdır: `supervision`'ın `BaseAnnotator` arayüzünü ve renk ç
 kullanırlar, yani palet ve `ColorLookup` davranışı aynıdır — yalnızca çizgi geometrisi
 farklıdır.
 
-`bracket`, `crosshair` ve `target` ikinci bir renk kabul eder; dirsekler, merkez artısı
-ve köşeler o renge geçer:
+`dashed_corner`, `bracket`, `crosshair` ve `target` ikinci bir renk kabul eder; köşe
+ayraçları, dirsekler ve merkez artısı o renge geçer — hibrit biçimlerin iki katmanı
+böyle ayrışır:
 
 ```python
 theme = Theme(
