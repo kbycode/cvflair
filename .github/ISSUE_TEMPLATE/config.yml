@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Tema playground
+    url: https://kbycode.github.io/cvflair/
+    about: Bir ayarın nasıl göründüğünü merak ediyorsan önce burada dene — kurulum gerekmez.
+  - name: Örnek galerisi
+    url: https://github.com/kbycode/cvflair/blob/main/examples/README.md
+    about: Nasıl yapılacağını soran soruların çoğunun karşılığı çalışan bir örnek olarak burada.

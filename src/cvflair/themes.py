@@ -162,7 +162,11 @@ class Theme:
         thickness: int,
         accent: ColorPalette | None = None,
     ):
-        common = {"color": palette, "thickness": thickness, "color_lookup": self.color_lookup}
+        common: dict[str, Any] = {
+            "color": palette,
+            "thickness": thickness,
+            "color_lookup": self.color_lookup,
+        }
 
         if self.box_style == "round":
             return RoundBoxAnnotator(**common, roundness=self.roundness)

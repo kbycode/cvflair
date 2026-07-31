@@ -1,0 +1,47 @@
+name: Özellik önerisi
+description: Yeni tema, çerçeve biçimi veya API isteği
+labels: ["öneri"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Kapsam notu: cvflair tespit **çizer**, tespit **yapmaz**. Model, takip ve
+        bölge mantığı bilinçli olarak paketin dışında.
+
+  - type: textarea
+    id: ihtiyac
+    attributes:
+      label: Hangi ihtiyaç
+      description: Ne yapmaya çalışıyorsun, şu an nerede tıkanıyorsun.
+    validations:
+      required: true
+
+  - type: textarea
+    id: oneri
+    attributes:
+      label: Önerdiğin arayüz
+      description: Nasıl görünmesini beklerdin.
+      render: python
+      placeholder: |
+        Theme(box_style="cizgi_roman", thickness=3)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tur
+    attributes:
+      label: Tür
+      options:
+        - Yeni tema
+        - Yeni çerçeve biçimi
+        - Mevcut API'de değişiklik
+        - Belgeler / örnekler
+        - Diğer
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatif
+    attributes:
+      label: Şu an nasıl idare ediyorsun
+      description: Elle çizim, başka kütüphane, kopyalanmış kod — hepsi bilgi.

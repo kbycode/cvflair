@@ -155,6 +155,8 @@ class Camera:
 
     def _read_loop(self) -> None:
         capture = self._capture
+        if capture is None:  # pragma: no cover - start() always sets it first
+            return
         while not self._stop_event.is_set():
             ok, frame = capture.read()
             if not ok or frame is None:

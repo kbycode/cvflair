@@ -2,6 +2,15 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Depo
+- Tip denetimi CI'ya eklendi (`mypy`). Paket `py.typed` gönderiyordu ama tip iddiası
+  denetlenmiyordu; ilk koşuda üç gerçek sorun çıktı ve düzeltildi (annotator
+  kurucularına giden sözlüğün tiplerini kaybetmesi, okuma döngüsünün `capture`
+  değerini `None` olmayan varsayması, isteğe bağlı `ultralytics` importu).
+- Issue şablonları (hata / öneri), PR şablonu ve [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## 0.6.0
 
 ### Eklendi

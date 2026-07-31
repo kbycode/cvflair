@@ -43,6 +43,7 @@ dev = [
     "ruff>=0.6",
     "pillow>=10.0",       # tools/make_demo_gif.py, sadece dokümantasyon çıktısı için
     "supervision>=0.28",  # yalnızca uyumluluk testleri için; paket buna bağımlı değil
+    "mypy>=1.11",
 ]
 release = [
     "build>=1.2",
@@ -67,6 +68,19 @@ cvflair = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+# python_version sabitlenmiyor: numpy'nin stub'ları 3.12+ sözdizimi kullanıyor,
+# 3.10 olarak ayrıştırılınca çözümleme daha başlamadan patlıyor. 3.10 uyumluluğu
+# zaten CI'da testlerin o sürümde koşmasıyla doğrulanıyor.
+files = ["src/cvflair"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+# Ultralytics isteğe bağlı bir extra; tip bilgisi olmadan tembel import ediliyor.
+[[tool.mypy.overrides]]
+module = ["ultralytics.*"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

@@ -1,0 +1,50 @@
+name: Hata bildirimi
+description: Beklenmedik bir davranış, çökme veya yanlış çizim
+labels: ["hata"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Teşekkürler. Proje boş zamanlarda geliştiriliyor; yanıt hemen gelmeyebilir
+        ama her bildirim okunuyor.
+
+  - type: textarea
+    id: ne-oldu
+    attributes:
+      label: Ne oldu
+      description: Beklediğin ve karşılaştığın davranış.
+      placeholder: |
+        Beklenen: neon temasında kutular yuvarlak köşeli çizilmeli.
+        Olan: köşeler düz çıkıyor.
+    validations:
+      required: true
+
+  - type: textarea
+    id: kod
+    attributes:
+      label: Yeniden üretecek en kısa kod
+      description: Kamera gerektirmeyen bir örnek varsa çok işe yarar.
+      render: python
+      placeholder: |
+        import numpy as np
+        from cvflair import Detections, get_theme
+
+        frame = np.zeros((240, 320, 3), dtype=np.uint8)
+        get_theme("neon").annotate(frame, Detections(xyxy=[[10, 10, 100, 100]], class_id=[0]))
+    validations:
+      required: true
+
+  - type: input
+    id: surum
+    attributes:
+      label: Sürümler
+      description: "`python -c \"import cvflair, cv2, sys; print(cvflair.__version__, cv2.__version__, sys.version)\"`"
+      placeholder: 0.6.0 4.10.0 3.12.3 (Windows 11)
+    validations:
+      required: true
+
+  - type: textarea
+    id: ek
+    attributes:
+      label: Ekran görüntüsü veya hata çıktısı
+      description: Çizimle ilgili bir sorunsa görsel en hızlı yol.

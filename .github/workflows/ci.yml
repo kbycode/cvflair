@@ -37,6 +37,10 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      # Paket py.typed gönderiyor; tip iddiasını denetlemeden bırakmıyoruz.
+      - name: Tip denetimi
+        run: mypy
+
       - name: Test
         run: pytest -q
 
