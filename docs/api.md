@@ -69,6 +69,18 @@
 | `pastel` | 2,8 | %8 |
 | `neon` | 4,1 | %12 |
 
+Maske çizimi ayrı bir hikâye — piksel başına iş olduğu için maliyeti kapladığı
+alanla orantılı. Aynı sahnede 8 maske (her biri kutusuna içten teğet elips):
+
+| Çizim | ms/kare |
+|---|---|
+| dolgu + kontur | 10,7 |
+| yalnız kontur (`mask_opacity=0`) | 7,8 |
+
+Maske yalnızca tespitte varsa çizilir; olmayan sahnede ölçülebilir bir maliyeti
+yok. İlk sürümde bu 46 ms'ydi: iş tüm kare yerine nesnenin penceresine indirildi
+ve dizin atama yerine OpenCV'nin maskeli kopyası kullanıldı.
+
 Karşılaştırma tabanı, elle yazılmış bir OpenCV kutu+etiket döngüsü: 0,34 ms.
 `minimal` onunla aynı hızda; aradaki fark tamamen çizilen şeyden geliyor.
 Pahalı olan yuvarlak köşe: kenar yumuşatmalı yay, düz çizgiye göre dört kat

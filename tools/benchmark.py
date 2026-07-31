@@ -48,6 +48,23 @@ def make_detections(count: int, width: int, height: int) -> Detections:
     )
 
 
+def with_masks(detections: Detections, width: int, height: int) -> Detections:
+    """Aynı kutulara içten teğet elips maskeler; segmentasyon çıktısını taklit eder."""
+    rows, columns = np.ogrid[:height, :width]
+    masks = []
+    for x1, y1, x2, y2 in detections.xyxy:
+        cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+        rx, ry = max((x2 - x1) / 2, 1), max((y2 - y1) / 2, 1)
+        masks.append(((columns - cx) / rx) ** 2 + ((rows - cy) / ry) ** 2 <= 1)
+    return Detections(
+        xyxy=detections.xyxy,
+        class_id=detections.class_id,
+        confidence=detections.confidence,
+        names=detections.names,
+        mask=np.stack(masks),
+    )
+
+
 def bare_opencv(frame: np.ndarray, detections: Detections, labels: list[str]) -> None:
     """Kütüphanesiz karşılaştırma tabanı: kutu + etiket, elle."""
     for index in range(len(detections)):
@@ -100,6 +117,17 @@ def main() -> None:
         median, _ = measure(draw_with(get_theme(name)), args.repeat)
         overhead = (median - baseline) / baseline * 100
         print(f"| `{name}` | {median:.2f} | {1000 / median:.0f} | {overhead:+.0f}% |")
+
+    # Maske çizimi ayrı ölçülüyor: yalnızca tespitte maske varsa çalışıyor ve
+    # maliyeti piksel başına, yani kapladığı alanla orantılı.
+    masked = with_masks(detections, args.width, args.height)
+    mask_theme = Theme(box_style="box", mask_opacity=0.4, mask_outline=2)
+    outline_theme = Theme(box_style="box", mask_opacity=0.0, mask_outline=2)
+    fill_ms, _ = measure(lambda: mask_theme.annotate(frame, masked, labels=labels), args.repeat)
+    line_ms, _ = measure(lambda: outline_theme.annotate(frame, masked, labels=labels), args.repeat)
+    print(f"\nMaske (aynı sahne, {args.boxes} maske):")
+    print(f"  dolgu + kontur : {fill_ms:.2f} ms  (+{fill_ms - baseline:.2f})")
+    print(f"  yalnız kontur  : {line_ms:.2f} ms  (+{line_ms - baseline:.2f})")
 
     # Tema kurulumunun kendi maliyeti: annotator'lar burada hazırlanıyor. Döngü
     # içinde tema kurmak bu süreyi her kareye ekler.

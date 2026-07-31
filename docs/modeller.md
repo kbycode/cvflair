@@ -61,6 +61,7 @@ ağırlık yok, yalnızca OpenCV.
 | `confidence` | hayır | güven skoru |
 | `names` | hayır | sınıf adı; etiket metni verilmezse buradan gelir |
 | `tracker_id` | hayır | takip kimliği; `ColorLookup.TRACK` bunu kullanır |
+| `mask` | hayır | `(N, H, W)` boolean segmentasyon maskesi; kare boyutunda olmalı |
 
 Yardımcılar:
 
@@ -71,7 +72,22 @@ Detections.from_ultralytics(result)      # Ultralytics Results nesnesinden
 ```
 
 `from_ultralytics` yalnızca kutuları taşır; segmentasyon maskeleri ve döndürülmüş
-kutular aktarılmaz.
+kutular aktarılmaz — maskeleri `mask=` alanına kendin verebilir ya da başka bir
+kütüphanenin tespit nesnesini doğrudan geçebilirsin.
+
+### Maskeler
+
+Maske verilirse çizilir: renkli yarı saydam dolgu ve kenarında kontur.
+
+```python
+Theme(mask_opacity=0.4, mask_outline=2)   # varsayılan
+Theme(mask_opacity=0.0)                   # yalnız kontur, daha ucuz
+Theme(masks=False)                        # maskeleri hiç çizme
+```
+
+Maske kutunun altında, çerçeve ve etiketin üstünde kalır. Maliyeti piksel
+başına olduğu için kapladığı alanla orantılıdır; ölçülmüş rakamlar
+[API belgesinde](api.md#ne-kadar-sürüyor).
 
 ### Bozuk kutular
 

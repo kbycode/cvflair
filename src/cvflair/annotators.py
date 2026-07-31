@@ -146,6 +146,13 @@ def _int_box(xyxy: np.ndarray) -> tuple[int, int, int, int] | None:
     return (int(clipped[0]), int(clipped[1]), int(clipped[2]), int(clipped[3]))
 
 
+def _as_uint8(mask: np.ndarray) -> np.ndarray:
+    """Boolean maskeyi OpenCV'nin beklediği uint8'e, mümkünse kopyalamadan çevirir."""
+    if mask.dtype == np.bool_ and mask.flags["C_CONTIGUOUS"]:
+        return mask.view(np.uint8)
+    return np.ascontiguousarray(mask, dtype=np.uint8)
+
+
 def _overlaps(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
     """İki plaka dikdörtgeni kesişiyor mu."""
     return not (
@@ -629,6 +636,8 @@ class MaskAnnotator:
         #: Outline weight along the mask edge; 0 draws only the tint.
         self.outline = max(0, int(outline))
         self.color_lookup = color_lookup
+        #: Slack around the detection box when cropping the mask to a window.
+        self.margin = 4
 
     def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
         masks = getattr(detections, "mask", None)
@@ -636,29 +645,77 @@ class MaskAnnotator:
             return scene
 
         height, width = scene.shape[:2]
-        usable = []
+        # Her maske için tüm kareyi taramak pahalı: nesne kadrajın küçük bir
+        # parçasını kaplıyor. Maskenin kendi sınırlayıcı kutusuna inip bütün işi
+        # o pencerede yapmak aynı sonucu onlarca kat ucuza veriyor.
+        windows = []
         for index in range(len(detections)):
             mask = np.asarray(masks[index], dtype=bool)
-            if mask.shape != (height, width) or not mask.any():
+            if mask.shape != (height, width):
                 continue  # başka boyuttaki maske çizilemez, sessizce atlanır
+            bounds = self._window(mask, detections.xyxy[index], width, height)
+            if bounds is None:
+                continue
+            left, top, right, bottom = bounds
             colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
-            usable.append((mask, colour))
+            windows.append((mask[top:bottom, left:right], colour, left, top))
 
-        if self.opacity > 0 and usable:
-            # Tek harmanlama: maske başına ayrı geçiş kareyi birden çok kez tarardı.
-            tinted = scene.copy()
-            for mask, colour in usable:
-                tinted[mask] = colour
-            cv2.addWeighted(tinted, self.opacity, scene, 1 - self.opacity, 0, scene)
+        if self.opacity > 0:
+            for patch, colour, left, top in windows:
+                region = scene[top : top + patch.shape[0], left : left + patch.shape[1]]
+                # `region[patch] = ...` biçimindeki dizin atama bu işin en pahalı
+                # yolu; harmanlamayı pencerenin tamamına yapıp maskeli kopyayı
+                # OpenCV'ye bırakmak üç kat hızlı.
+                block = np.full_like(region, colour)
+                blended = cv2.addWeighted(region, 1 - self.opacity, block, self.opacity, 0)
+                cv2.copyTo(blended, _as_uint8(patch), region)
 
         # Kontur harmanlamadan sonra: çizgi tam opaklıkta kalsın.
         if self.outline:
-            for mask, colour in usable:
+            for patch, colour, left, top in windows:
                 edges, _ = cv2.findContours(
-                    mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                    _as_uint8(patch), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE,
+                    offset=(left, top),
                 )
                 cv2.drawContours(scene, edges, -1, colour, self.outline, cv2.LINE_AA)
         return scene
+
+    def _window(
+        self, mask: np.ndarray, xyxy: np.ndarray, width: int, height: int
+    ) -> tuple[int, int, int, int] | None:
+        """
+        Pick the rectangle the mask is drawn in.
+
+        The detection box is used first, widened by a small margin: it normally
+        bounds the mask and costs nothing to read. If the mask still touches the
+        edge of that window it may run further, and only then is the whole mask
+        scanned -- the expensive path stays the exception.
+        """
+        box = _int_box(xyxy)
+        if box is not None:
+            left = max(0, min(box[0], box[2]) - self.margin)
+            top = max(0, min(box[1], box[3]) - self.margin)
+            right = min(width, max(box[0], box[2]) + self.margin)
+            bottom = min(height, max(box[1], box[3]) + self.margin)
+            patch = mask[top:bottom, left:right]
+            if patch.size and not self._touches_edge(patch):
+                return (left, top, right, bottom) if patch.any() else None
+
+        rows, columns = np.any(mask, axis=1), np.any(mask, axis=0)
+        if not rows.any():
+            return None
+        return (
+            int(np.argmax(columns)),
+            int(np.argmax(rows)),
+            width - int(np.argmax(columns[::-1])),
+            height - int(np.argmax(rows[::-1])),
+        )
+
+    @staticmethod
+    def _touches_edge(patch: np.ndarray) -> bool:
+        return bool(
+            patch[0].any() or patch[-1].any() or patch[:, 0].any() or patch[:, -1].any()
+        )
 
     def __repr__(self) -> str:
         return f"MaskAnnotator(opacity={self.opacity}, outline={self.outline})"

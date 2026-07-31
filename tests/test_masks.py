@@ -112,3 +112,31 @@ def test_masks_can_be_switched_off():
 
     assert painted(with_masks) > painted(without)
     assert Theme(masks=False)._mask_annotator is None
+
+
+def test_only_the_mask_area_changes():
+    """Harmanlama tam olarak maskenin kapladığı alana uygulanmalı."""
+    frame = np.full((*SHAPE, 3), 200, dtype=np.uint8)
+    mask = disc()
+
+    MaskAnnotator(color=["#000000"], opacity=0.5, outline=0).annotate(
+        frame, Detections(xyxy=[[50, 30, 110, 90]], class_id=[0], mask=mask)
+    )
+
+    changed = int(np.count_nonzero((frame != 200).any(axis=2)))
+    assert changed == int(mask.sum())
+    assert frame[60, 80].max() == 100, "maske içi harmanlanmalı"
+    assert frame[5, 5].max() == 200, "maske dışına dokunulmamalı"
+
+
+def test_mask_wider_than_its_box_is_drawn_whole():
+    """Pencere tespit kutusundan çıkarılıyor; maske taşarsa tam tarama devreye girmeli."""
+    frame = np.zeros((*SHAPE, 3), dtype=np.uint8)
+    wide = np.zeros(SHAPE, dtype=bool)
+    wide[20:100, 20:140] = True
+
+    MaskAnnotator(color=["#FF0000"], opacity=1.0, outline=0).annotate(
+        frame, Detections(xyxy=[[60, 50, 80, 70]], class_id=[0], mask=wide)
+    )
+
+    assert int(np.count_nonzero(frame.any(axis=2))) == int(wide.sum())
