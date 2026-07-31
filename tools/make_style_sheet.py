@@ -82,7 +82,9 @@ def theme_preview(name: str, source: np.ndarray) -> np.ndarray:
         xyxy=xyxy, class_id=np.arange(len(DETECTIONS)), confidence=confidences
     )
     labels = [f"{item[0]} {score:.2f}" for item, score in zip(DETECTIONS, confidences, strict=True)]
-    get_theme(name).annotate(frame, detections, labels=labels)
+    # Panelli temalar için örnek sayaçlar; panelsiz temalarda yok sayılıyor.
+    stats = {"FPS": 30, "Objects": len(DETECTIONS)}
+    get_theme(name).annotate(frame, detections, labels=labels, stats=stats)
     return frame
 
 

@@ -29,7 +29,7 @@ def painted_pixels(frame: np.ndarray) -> int:
 
 
 def test_shipped_themes():
-    assert available_themes() == ["cyberpunk", "minimal", "neon", "pastel"]
+    assert available_themes() == ["cyberpunk", "hud", "minimal", "neon", "pastel"]
 
 
 @pytest.mark.parametrize("name", available_themes())
@@ -56,7 +56,7 @@ def test_get_theme_returns_independent_instances():
 
 
 def test_unknown_theme_lists_the_options():
-    with pytest.raises(ValueError, match="Available: cyberpunk, minimal, neon, pastel"):
+    with pytest.raises(ValueError, match="Available: cyberpunk, hud, minimal, neon, pastel"):
         get_theme("vaporwave")
 
 

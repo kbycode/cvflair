@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import queue
 import threading
-from collections.abc import Callable, Iterator, Sequence
+import time
+from collections import deque
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from typing import Any, overload
 
 import cv2
@@ -73,6 +75,8 @@ class Camera:
         self._window_open = False
         self._frames_read = 0
         self._frames_dropped = 0
+        # Tüketilen karelerin zaman damgaları; ölçülen hız buradan çıkıyor.
+        self._read_times: deque[float] = deque(maxlen=30)
 
     # -- configuration ---------------------------------------------------
 
@@ -97,6 +101,19 @@ class Camera:
     def frames_dropped(self) -> int:
         """Frames discarded because the consumer was still busy."""
         return self._frames_dropped
+
+    @property
+    def measured_fps(self) -> float:
+        """
+        Frames actually consumed per second, averaged over the last 30.
+
+        This is the rate the loop achieves, not the rate requested from the
+        device through ``fps``; annotation and inference slow it down.
+        """
+        if len(self._read_times) < 2:
+            return 0.0
+        span = self._read_times[-1] - self._read_times[0]
+        return (len(self._read_times) - 1) / span if span > 0 else 0.0
 
     # -- lifecycle -------------------------------------------------------
 
@@ -184,9 +201,11 @@ class Camera:
         A frame is never returned twice: the queue slot is consumed here.
         """
         try:
-            return self._queue.get(timeout=timeout)
+            frame = self._queue.get(timeout=timeout)
         except queue.Empty:
             return None
+        self._read_times.append(time.perf_counter())
+        return frame
 
     @overload
     def stream(self, timeout: float = ..., *, model: None = ...) -> Iterator[np.ndarray]: ...
@@ -230,11 +249,33 @@ class Camera:
         frame: np.ndarray,
         detections: Detections | None = None,
         labels: Sequence[str] | None = None,
+        stats: Mapping[str, Any] | None = None,
     ) -> np.ndarray:
-        """Apply the active theme in place. Useful when not using :meth:`show`."""
-        if detections is None:
-            return frame
-        return self._theme.annotate(frame, detections, labels=labels)
+        """
+        Apply the active theme in place. Useful when not using :meth:`show`.
+
+        Themes with a HUD get frame rate and detection count for free; ``stats``
+        adds to that panel and wins on a repeated key.
+        """
+        return self._theme.annotate(
+            frame,
+            detections if detections is not None else Detections.empty(),
+            labels=labels,
+            stats=self._hud_stats(detections, stats),
+        )
+
+    def _hud_stats(
+        self, detections: Detections | None, extra: Mapping[str, Any] | None
+    ) -> dict[str, Any] | None:
+        if self._theme._hud_annotator is None:
+            return None
+        stats: dict[str, Any] = {
+            "FPS": f"{self.measured_fps:.0f}",
+            "Objects": 0 if detections is None else len(detections),
+        }
+        if extra:
+            stats.update(extra)
+        return stats
 
     def show(
         self,
@@ -242,6 +283,7 @@ class Camera:
         detections: Detections | None = None,
         labels: Sequence[str] | None = None,
         *,
+        stats: Mapping[str, Any] | None = None,
         wait: int = 1,
     ) -> bool:
         """
@@ -250,7 +292,7 @@ class Camera:
         Returns ``False`` once the user asks to quit (``q``, ``ESC``, or the
         window's close button), which also ends an active :meth:`stream`.
         """
-        self.annotate(frame, detections, labels=labels)
+        self.annotate(frame, detections, labels=labels, stats=stats)
         cv2.imshow(self.window_name, frame)
         self._window_open = True
 

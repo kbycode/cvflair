@@ -129,6 +129,7 @@ Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca �
 | `neon` | sınıf başına canlı renk, yuvarlak köşe, koyu hâle ile parlama hissi | ![neon](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-neon.png) |
 | `pastel` | yumuşak tonlar, geniş yuvarlama, koyu etiket yazısı — atölye/projeksiyon | ![pastel](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-pastel.png) |
 | `cyberpunk` | ince çerçeve + kalın beyaz köşeler, yüksek kontrast — hedef kilitleme görünümü | ![cyberpunk](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-cyberpunk.png) |
+| `hud` | ince köşe çentikleri + köşede sayaç paneli — oyun ve robotik demoları | ![hud](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/theme-hud.png) |
 
 ### Çerçeve biçimleri
 
@@ -160,6 +161,28 @@ theme = Theme(
     thickness=3,
 )
 ```
+
+### Sayaç paneli
+
+`hud` teması köşeye küçük bir panel çizer. Sayılar kutulardan değil döngüden gelir,
+bu yüzden ayrı bir yoldan veriliyor — `Camera` kare hızını ve tespit sayısını
+kendisi dolduruyor:
+
+```python
+cam = Camera(source=0, theme="hud")
+for frame, detections in cam.stream(model="yolov8n.pt"):
+    cam.show(frame, detections)          # FPS ve Objects panelde
+```
+
+Kendi satırlarını eklemek için `stats`; aynı anahtar verilirse seninki kazanır:
+
+```python
+cam.show(frame, detections, stats={"Skor": score, "Tur": lap})
+```
+
+Panel her temaya açılabilir: `Theme(hud=True, hud_position="bottom_right", hud_opacity=0.5)`.
+Konumlar `cvflair.HUD_POSITIONS` içinde. Ölçülen kare hızına `cam.measured_fps` ile
+doğrudan da erişilebilir — cihazdan istenen `fps` değil, döngünün gerçekte ulaştığı hız.
 
 Özel bir tema, `Theme` doğrudan kurulup `Camera`'ya verilerek tanımlanır:
 
@@ -196,10 +219,11 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 | `cam.start()` / `cam.close()` | Cihazı açar ve okuma thread'ini başlatır / her şeyi bırakır |
 | `cam.stream(timeout, model=None)` | Kareleri üretir; model verilirse `(kare, tespitler)` çifti. İlk kullanımda `start()`, bitince `close()` eder |
 | `cam.read(timeout)` | En güncel tek kareyi döndürür, kaynak bittiyse `None` |
-| `cam.show(frame, detections, labels)` | Temayı uygular, pencerede gösterir; çıkış istendiğinde `False` döner |
+| `cam.show(frame, detections, labels, stats)` | Temayı uygular, pencerede gösterir; çıkış istendiğinde `False` döner |
 | `cam.annotate(frame, detections, labels)` | Sadece çizer, pencere açmaz |
 | `cam.theme` | Okunur/yazılır; `cam.theme = "minimal"` çalışır |
 | `cam.frames_read` / `cam.frames_dropped` | Okunan ve tüketici yetişemediği için atılan kare sayısı |
+| `cam.measured_fps` | Son 30 karenin ortalamasıyla ölçülen gerçek kare hızı |
 | `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
 | `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı; `from_ultralytics` ve `from_arrays` yardımcılarıyla |
 | `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir; `conf`, `iou`, `device` gibi ayarları taşır |

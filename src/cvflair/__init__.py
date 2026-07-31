@@ -17,12 +17,14 @@ Detections may be cvflair's own :class:`~cvflair.detections.Detections`, a
 from __future__ import annotations
 
 from .annotators import (
+    HUD_POSITIONS,
     BoxAnnotator,
     BoxCornerAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    HudAnnotator,
     LabelAnnotator,
     RoundBoxAnnotator,
     TargetBoxAnnotator,
@@ -33,10 +35,11 @@ from .detections import Detections
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "BOX_STYLES",
+    "HUD_POSITIONS",
     "BoxAnnotator",
     "BoxCornerAnnotator",
     "BracketBoxAnnotator",
@@ -50,6 +53,7 @@ __all__ = [
     "DashedCornerAnnotator",
     "Detections",
     "Detector",
+    "HudAnnotator",
     "LabelAnnotator",
     "RoundBoxAnnotator",
     "TargetBoxAnnotator",

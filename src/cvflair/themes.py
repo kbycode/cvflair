@@ -9,19 +9,21 @@ common avoidable cost in this kind of pipeline.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
 import numpy as np
 
 from .annotators import (
+    HUD_POSITIONS,
     BoxAnnotator,
     BoxCornerAnnotator,
     BracketBoxAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    HudAnnotator,
     LabelAnnotator,
     RoundBoxAnnotator,
     TargetBoxAnnotator,
@@ -85,6 +87,11 @@ class Theme:
     text_padding: int = 6
     label_radius: int = 0
     color_lookup: ColorLookup = ColorLookup.CLASS
+    #: Corner stats panel. When on, :meth:`annotate` draws whatever ``stats``
+    #: it is handed; with no data there is no panel.
+    hud: bool = False
+    hud_position: str = "top_left"
+    hud_opacity: float = 0.6
 
     def __post_init__(self) -> None:
         if self.box_style not in BOX_STYLES:
@@ -95,6 +102,11 @@ class Theme:
             raise ValueError(f"thickness must be >= 1, got {self.thickness}.")
         if not 0.0 < self.roundness <= 1.0:
             raise ValueError(f"roundness must be in (0, 1], got {self.roundness}.")
+        if self.hud_position not in HUD_POSITIONS:
+            raise ValueError(
+                f"Unknown hud_position {self.hud_position!r}. "
+                f"Use one of: {', '.join(HUD_POSITIONS)}."
+            )
 
         self.palette = resolve_palette(self.palette)
         if self.accent_palette is not None:
@@ -130,6 +142,17 @@ class Theme:
                 color_lookup=self.color_lookup,
             )
             if self.labels
+            else None
+        )
+        self._hud_annotator = (
+            HudAnnotator(
+                color=self.palette,
+                text_scale=self.text_scale,
+                text_thickness=self.text_thickness,
+                position=self.hud_position,
+                opacity=self.hud_opacity,
+            )
+            if self.hud
             else None
         )
 
@@ -188,20 +211,24 @@ class Theme:
         scene: np.ndarray,
         detections: Any,
         labels: Sequence[str] | None = None,
+        stats: Mapping[str, Any] | None = None,
     ) -> np.ndarray:
         """
         Draw ``detections`` onto ``scene`` in place and return the same array.
 
-        ``detections`` is cvflair's :class:`~cvflair.detections.Detections`, a
-        ``supervision.Detections``, or anything carrying the same fields.
+        ``detections`` is cvflair's :class:`~cvflair.detections.Detections` or
+        anything carrying the same fields. ``stats`` feeds the HUD panel when
+        the theme has one -- ``{"FPS": 30, "Objects": 3}`` and so on.
         """
-        if len(detections) == 0:
-            return scene
-        if self._glow_annotator is not None:
-            self._glow_annotator.annotate(scene, detections)
-        self._box_annotator.annotate(scene, detections)
-        if self._label_annotator is not None:
-            self._label_annotator.annotate(scene, detections, labels=labels)
+        if len(detections):
+            if self._glow_annotator is not None:
+                self._glow_annotator.annotate(scene, detections)
+            self._box_annotator.annotate(scene, detections)
+            if self._label_annotator is not None:
+                self._label_annotator.annotate(scene, detections, labels=labels)
+
+        if self._hud_annotator is not None and stats:
+            self._hud_annotator.annotate(scene, stats)
         return scene
 
 
@@ -267,11 +294,29 @@ def _cyberpunk() -> Theme:
     )
 
 
+def _hud() -> Theme:
+    """Thin corner marks plus a stats panel: made for game and robotics demos."""
+    return Theme(
+        name="hud",
+        palette=["#37E8B0", "#FFC53D", "#FF5C7A", "#5AA9FF"],
+        box_style="corner",
+        thickness=2,
+        corner_length=18,
+        text_color="#06231B",
+        text_scale=0.45,
+        text_padding=5,
+        hud=True,
+        hud_position="top_left",
+        hud_opacity=0.6,
+    )
+
+
 _THEMES: dict[str, Callable[[], Theme]] = {
     "minimal": _minimal,
     "neon": _neon,
     "pastel": _pastel,
     "cyberpunk": _cyberpunk,
+    "hud": _hud,
 }
 
 

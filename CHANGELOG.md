@@ -2,6 +2,21 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## 0.5.0
+
+### Eklendi
+- **`hud` teması** — ince köşe çentikleri ve köşede yarı saydam bir sayaç paneli.
+  Panel kutulardan değil döngüden beslenir: `Camera` kare hızını ve tespit sayısını
+  kendisi doldurur, `cam.show(frame, detections, stats={"Skor": 12})` ile satır
+  eklenebilir.
+- `HudAnnotator` ve `Theme.hud` / `hud_position` / `hud_opacity`. Panel dört köşeden
+  birine konabiliyor (`cvflair.HUD_POSITIONS`); plaka sahneye harmanlanıyor, yazı tam
+  opaklıkta kalıyor.
+- `Camera.measured_fps` — son 30 karenin ortalamasıyla ölçülen gerçek hız; cihazdan
+  istenen `fps` değil, döngünün ulaştığı değer.
+- `Theme.annotate(..., stats=...)`: panel verisi buradan geçiyor, veri yoksa panel de
+  çizilmiyor. Tespit olmasa bile panel görünür.
+
 ## 0.4.0
 
 ### Belgeler

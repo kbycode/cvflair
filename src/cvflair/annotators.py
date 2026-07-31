@@ -30,9 +30,14 @@ __all__ = [
     "CrosshairAnnotator",
     "TargetBoxAnnotator",
     "LabelAnnotator",
+    "HudAnnotator",
+    "HUD_POSITIONS",
 ]
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+
+#: Where a HUD panel can sit.
+HUD_POSITIONS: tuple[str, ...] = ("top_left", "top_right", "bottom_left", "bottom_right")
 
 
 # -- shared drawing helpers -------------------------------------------------
@@ -410,3 +415,108 @@ class LabelAnnotator:
 
     def __repr__(self) -> str:
         return f"LabelAnnotator(text_scale={self.text_scale})"
+
+
+# -- heads-up display -------------------------------------------------------
+
+
+class HudAnnotator:
+    """
+    A small stats panel in one corner: FPS, counters, whatever is handed over.
+
+    ``annotate`` takes a mapping, not detections -- the numbers come from the
+    loop around the frame, not from the boxes in it. :class:`cvflair.Camera`
+    fills in frame rate and detection count; anything else is the caller's.
+
+    The plate is blended into the frame so the scene stays visible behind it,
+    while the text is drawn at full strength to stay readable.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        text_color: Any = Color.WHITE,
+        background: Any = "#0B0D11",
+        opacity: float = 0.6,
+        text_scale: float = 0.5,
+        text_thickness: int = 1,
+        padding: int = 10,
+        line_gap: int = 8,
+        position: str = "top_left",
+        margin: int = 14,
+        border_radius: int = 8,
+    ) -> None:
+        if position not in HUD_POSITIONS:
+            raise ValueError(
+                f"Unknown hud position {position!r}. Use one of: {', '.join(HUD_POSITIONS)}."
+            )
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.text_color = resolve_palette(text_color).colors[0]
+        self.background = resolve_palette(background).colors[0]
+        self.opacity = min(max(float(opacity), 0.0), 1.0)
+        self.text_scale = float(text_scale)
+        self.text_thickness = max(1, int(text_thickness))
+        self.padding = max(0, int(padding))
+        self.line_gap = max(0, int(line_gap))
+        self.position = position
+        self.margin = max(0, int(margin))
+        self.border_radius = max(0, int(border_radius))
+
+    def annotate(self, scene: np.ndarray, stats: Any) -> np.ndarray:
+        if not stats:
+            return scene
+
+        lines = [f"{key}  {value}" for key, value in dict(stats).items()]
+        sizes = [
+            cv2.getTextSize(line, FONT, self.text_scale, self.text_thickness)[0] for line in lines
+        ]
+        line_height = max(height for _, height in sizes)
+        bar_width = 3
+
+        width = max(w for w, _ in sizes) + self.padding * 2 + bar_width + 6
+        height = line_height * len(lines) + self.line_gap * (len(lines) - 1) + self.padding * 2
+
+        frame_height, frame_width = scene.shape[:2]
+        width = min(width, frame_width)
+        height = min(height, frame_height)
+
+        at_left = self.position.endswith("left")
+        at_top = self.position.startswith("top")
+        left = self.margin if at_left else frame_width - width - self.margin
+        top = self.margin if at_top else frame_height - height - self.margin
+        left = max(0, min(left, frame_width - width))
+        top = max(0, min(top, frame_height - height))
+
+        region = scene[top : top + height, left : left + width]
+        plate = region.copy()
+        _rounded_fill(
+            plate, (0, 0, width - 1, height - 1), self.border_radius, self.background.as_bgr()
+        )
+        cv2.addWeighted(plate, self.opacity, region, 1 - self.opacity, 0, region)
+
+        accent = self.color.by_index(0).as_bgr()
+        cv2.rectangle(
+            region,
+            (self.padding // 2, self.padding),
+            (self.padding // 2 + bar_width, height - self.padding),
+            accent,
+            -1,
+        )
+
+        text_left = self.padding + bar_width + 6
+        for index, line in enumerate(lines):
+            baseline = self.padding + line_height * (index + 1) + self.line_gap * index
+            cv2.putText(
+                region,
+                line,
+                (text_left, baseline),
+                FONT,
+                self.text_scale,
+                self.text_color.as_bgr(),
+                self.text_thickness,
+                cv2.LINE_AA,
+            )
+        return scene
+
+    def __repr__(self) -> str:
+        return f"HudAnnotator(position={self.position!r})"

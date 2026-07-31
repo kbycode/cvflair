@@ -165,6 +165,7 @@
           <option value="neon" selected>neon</option>
           <option value="pastel">pastel</option>
           <option value="cyberpunk">cyberpunk</option>
+          <option value="hud">hud</option>
           <option value="custom">özel</option>
         </select>
       </div>
@@ -246,6 +247,26 @@
     </div>
 
     <div class="panel">
+      <h2>Sayaç paneli</h2>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="hud"> Paneli çiz</label>
+      </div>
+      <div class="row" data-only="hud">
+        <label class="title" for="hudPosition">Konum</label>
+        <select id="hudPosition">
+          <option value="top_left">sol üst</option>
+          <option value="top_right">sağ üst</option>
+          <option value="bottom_left">sol alt</option>
+          <option value="bottom_right">sağ alt</option>
+        </select>
+      </div>
+      <div class="row" data-only="hud">
+        <label class="title" for="hudOpacity">Panel opaklığı <b id="hudOpacityOut"></b></label>
+        <input type="range" id="hudOpacity" min="0.1" max="1" step="0.05">
+      </div>
+    </div>
+
+    <div class="panel">
       <h2>Etiket</h2>
       <div class="row">
         <label class="switch"><input type="checkbox" id="labels" checked> Etiket çiz</label>
@@ -317,6 +338,7 @@ const DEFAULTS = {
   dashLength: 12, gapLength: 8, armLength: 18, centerSize: 10, edgeThickness: 1,
   glow: false, glowThickness: 5, glowDim: 0.45,
   labels: true, textColor: "#000000", textScale: 0.5, textPadding: 6, labelRadius: 0,
+  hud: false, hudPosition: "top_left", hudOpacity: 0.6,
 };
 
 // --- Temalar: src/cvflair/themes.py içindeki preset'lerin birebir karşılığı ---
@@ -338,6 +360,13 @@ const PRESETS = {
     boxStyle: "round", thickness: 2, roundness: 0.8,
     textColor: "#2e2e2e", textScale: 0.45, textPadding: 8, labelRadius: 10,
   },
+  hud: {
+    ...DEFAULTS,
+    palette: ["#37e8b0", "#ffc53d", "#ff5c7a", "#5aa9ff"],
+    boxStyle: "corner", thickness: 2, cornerLength: 18,
+    textColor: "#06231b", textScale: 0.45, textPadding: 5,
+    hud: true, hudPosition: "top_left", hudOpacity: 0.6,
+  },
   cyberpunk: {
     ...DEFAULTS,
     palette: ["#00f0ff", "#ff206e", "#ffd400", "#8aff00"], accent: "#ffffff",
@@ -352,7 +381,9 @@ const URL_KEYS = {
   dl: "dashLength", gl: "gapLength", al: "armLength", cs: "centerSize", et: "edgeThickness",
   g: "glow", gt: "glowThickness", gd: "glowDim",
   l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
+  h: "hud", hp: "hudPosition", ho: "hudOpacity",
 };
+const HUD_POSITIONS = ["top_left", "top_right", "bottom_left", "bottom_right"];
 const BOX_STYLES = [
   "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
 ];
@@ -388,6 +419,7 @@ let cameraStream = null;
 // ekranın tazeleme hızına göre değişirdi.
 let sceneTime = 0;
 let lastFrame = 0;
+let displayFps = 0;
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -461,7 +493,9 @@ function readUrl() {
       if (isHex(raw)) state.textColor = normaliseHex(raw);
     } else if (field === "accent") {
       state.accent = isHex(raw) ? normaliseHex(raw) : null;
-    } else if (field === "glow" || field === "labels") {
+    } else if (field === "hudPosition") {
+      if (HUD_POSITIONS.includes(raw)) state.hudPosition = raw;
+    } else if (field === "glow" || field === "labels" || field === "hud") {
       state[field] = raw === "1" || raw === "true";
     } else {
       const number = Number(raw);
@@ -483,6 +517,7 @@ function clampState() {
   state.edgeThickness = clamp(Math.round(state.edgeThickness), 1, 6);
   state.glowThickness = clamp(Math.round(state.glowThickness), 1, 20);
   state.glowDim = clamp(state.glowDim, 0.1, 0.9);
+  state.hudOpacity = clamp(state.hudOpacity, 0.1, 1);
   state.textScale = clamp(state.textScale, 0.3, 1.2);
   state.textPadding = clamp(Math.round(state.textPadding), 0, 20);
   state.labelRadius = clamp(Math.round(state.labelRadius), 0, 20);
@@ -517,6 +552,11 @@ function shareUrl() {
   if (state.glow) {
     params.set("gt", String(state.glowThickness));
     params.set("gd", String(state.glowDim));
+  }
+  params.set("h", state.hud ? "1" : "0");
+  if (state.hud) {
+    params.set("hp", state.hudPosition);
+    params.set("ho", String(state.hudOpacity));
   }
   params.set("l", state.labels ? "1" : "0");
   if (state.labels) {
@@ -576,6 +616,15 @@ function pythonCode() {
       lines.push("    glow_thickness=" + state.glowThickness + ",");
     }
     if (state.glowDim !== DEFAULTS.glowDim) lines.push("    glow_dim=" + state.glowDim + ",");
+  }
+  if (state.hud) {
+    lines.push("    hud=True,");
+    if (state.hudPosition !== DEFAULTS.hudPosition) {
+      lines.push('    hud_position="' + state.hudPosition + '",');
+    }
+    if (state.hudOpacity !== DEFAULTS.hudOpacity) {
+      lines.push("    hud_opacity=" + state.hudOpacity + ",");
+    }
   }
   if (!state.labels) {
     lines.push("    labels=False,");
@@ -992,11 +1041,46 @@ function drawScene(frames, width, height) {
   }
 }
 
+function drawHud(width, height, objectCount) {
+  const lines = [["FPS", Math.round(displayFps)], ["Objects", objectCount]];
+  const fontSize = Math.round(state.textScale * 30);
+  ctx.font = "600 " + fontSize + "px ui-sans-serif, system-ui, sans-serif";
+
+  const padding = 10;
+  const lineGap = 8;
+  const bar = 3;
+  const textLeft = padding + bar + 6;
+  const texts = lines.map(([key, value]) => key + "  " + value);
+  const panelWidth = Math.max(...texts.map((t) => ctx.measureText(t).width)) + textLeft + padding;
+  const panelHeight = fontSize * lines.length + lineGap * (lines.length - 1) + padding * 2;
+
+  const margin = 14;
+  const left = state.hudPosition.endsWith("left") ? margin : width - panelWidth - margin;
+  const top = state.hudPosition.startsWith("top") ? margin : height - panelHeight - margin;
+
+  ctx.save();
+  ctx.globalAlpha = state.hudOpacity;
+  ctx.fillStyle = "#0b0d11";
+  roundedPath(left, top, panelWidth, panelHeight, 8);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = state.palette[0];
+  ctx.fillRect(left + padding / 2, top + padding, bar, panelHeight - padding * 2);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.textBaseline = "alphabetic";
+  texts.forEach((line, index) => {
+    ctx.fillText(line, left + textLeft, top + padding + fontSize * (index + 1) + lineGap * index);
+  });
+}
+
 function render(now = performance.now()) {
   // Sekme arka plandayken kareler durur; sıçramayı önlemek için adım sınırlanır.
   const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
   lastFrame = now;
   if (animating) sceneTime += delta;
+  if (delta > 0) displayFps = displayFps ? displayFps * 0.9 + (1 / delta) * 0.1 : 1 / delta;
 
   const { width, height } = view;
   const frames = actorFrames(width, height);
@@ -1024,6 +1108,8 @@ function render(now = performance.now()) {
     }
   });
 
+  if (state.hud) drawHud(width, height, frames.length);
+
   requestAnimationFrame(render);
 }
 
@@ -1032,10 +1118,11 @@ function render(now = performance.now()) {
 const SLIDERS = [
   "thickness", "roundness", "cornerLength", "dashLength", "gapLength",
   "armLength", "centerSize", "edgeThickness",
-  "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius",
+  "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius", "hudOpacity",
 ];
 
 function rowIsVisible(token) {
+  if (token === "hud") return state.hud;
   if (token === "glow") return state.glow;
   if (token === "labels") return state.labels;
   if (token === "accent") return usesAccent();
@@ -1051,6 +1138,8 @@ function syncControls() {
   }
   document.getElementById("glow").checked = state.glow;
   document.getElementById("labels").checked = state.labels;
+  document.getElementById("hud").checked = state.hud;
+  document.getElementById("hudPosition").value = state.hudPosition;
   document.getElementById("textColor").value = state.textColor;
   document.getElementById("textColorOut").textContent = state.textColor;
   document.getElementById("accentOn").checked = Boolean(state.accent);
@@ -1128,7 +1217,10 @@ function bindControls() {
       update(() => { state[id] = Number(event.target.value); });
     });
   }
-  for (const id of ["glow", "labels"]) {
+  document.getElementById("hudPosition").addEventListener("change", (event) => {
+    update(() => { state.hudPosition = event.target.value; });
+  });
+  for (const id of ["glow", "labels", "hud"]) {
     document.getElementById(id).addEventListener("change", (event) => {
       update(() => { state[id] = event.target.checked; });
     });
