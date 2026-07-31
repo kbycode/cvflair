@@ -31,6 +31,8 @@ __all__ = [
     "TargetBoxAnnotator",
     "LabelAnnotator",
     "ConfidenceBarAnnotator",
+    "BlurAnnotator",
+    "ZoneAnnotator",
     "HudAnnotator",
     "EdgeAnnotator",
     "VertexAnnotator",
@@ -553,6 +555,100 @@ class ConfidenceBarAnnotator:
 
     def __repr__(self) -> str:
         return f"ConfidenceBarAnnotator(height={self.height})"
+
+
+class BlurAnnotator:
+    """
+    Hide what is inside each box: blur it, or drop it to blocks.
+
+    Nothing is drawn on top -- the region itself is replaced, which is what
+    face hiding needs. Boxes are clipped to the frame, so a detection hanging
+    off the edge blurs the part that is visible.
+    """
+
+    def __init__(self, mode: str = "blur", strength: int = 15) -> None:
+        if mode not in ("blur", "pixelate"):
+            raise ValueError(f"Unknown mode {mode!r}. Use 'blur' or 'pixelate'.")
+        self.mode = mode
+        #: Blur radius, or the block size for pixelation. Bigger hides more.
+        self.strength = max(1, int(strength))
+
+    def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
+        height, width = scene.shape[:2]
+        for index in range(len(detections)):
+            box = _int_box(detections.xyxy[index])
+            if box is None:
+                continue
+            x1 = max(0, min(box[0], box[2]))
+            y1 = max(0, min(box[1], box[3]))
+            x2 = min(width, max(box[0], box[2]))
+            y2 = min(height, max(box[1], box[3]))
+            if x2 - x1 < 2 or y2 - y1 < 2:
+                continue
+
+            region = scene[y1:y2, x1:x2]
+            scene[y1:y2, x1:x2] = (
+                self._pixelate(region) if self.mode == "pixelate" else self._blur(region)
+            )
+        return scene
+
+    def _blur(self, region: np.ndarray) -> np.ndarray:
+        # Çekirdek tek sayı olmalı ve bölgeden büyük olmamalı.
+        limit = min(region.shape[0], region.shape[1])
+        size = min(self.strength * 2 + 1, limit if limit % 2 else limit - 1)
+        return cv2.GaussianBlur(region, (max(3, size), max(3, size)), 0)
+
+    def _pixelate(self, region: np.ndarray) -> np.ndarray:
+        height, width = region.shape[:2]
+        blocks = (max(1, width // self.strength), max(1, height // self.strength))
+        small = cv2.resize(region, blocks, interpolation=cv2.INTER_AREA)
+        return cv2.resize(small, (width, height), interpolation=cv2.INTER_NEAREST)
+
+    def __repr__(self) -> str:
+        return f"BlurAnnotator(mode={self.mode!r}, strength={self.strength})"
+
+
+class ZoneAnnotator:
+    """
+    A polygon or a line drawn in the theme's colours.
+
+    cvflair draws the region; deciding what falls inside it is the caller's
+    business. ``fill_opacity`` blends a tint inside a closed polygon.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        thickness: int = 2,
+        fill_opacity: float = 0.0,
+        closed: bool = True,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.thickness = max(1, int(thickness))
+        self.fill_opacity = min(max(float(fill_opacity), 0.0), 1.0)
+        self.closed = bool(closed)
+
+    def annotate(self, scene: np.ndarray, points: Any, color_index: int = 0) -> np.ndarray:
+        polygon = np.asarray(points, dtype=np.float32).reshape(-1, 2)
+        if len(polygon) < 2 or not np.all(np.isfinite(polygon)):
+            return scene
+
+        clipped = np.clip(polygon, -COORDINATE_LIMIT, COORDINATE_LIMIT).astype(np.int32)
+        colour = self.color.by_index(color_index).as_bgr()
+
+        if self.closed and self.fill_opacity > 0 and len(clipped) >= 3:
+            overlay = scene.copy()
+            cv2.fillPoly(overlay, [clipped], colour)
+            cv2.addWeighted(overlay, self.fill_opacity, scene, 1 - self.fill_opacity, 0, scene)
+
+        cv2.polylines(
+            scene, [clipped], self.closed and len(clipped) >= 3, colour,
+            self.thickness, cv2.LINE_AA,
+        )
+        return scene
+
+    def __repr__(self) -> str:
+        return f"ZoneAnnotator(thickness={self.thickness}, closed={self.closed})"
 
 
 # -- key points -------------------------------------------------------------

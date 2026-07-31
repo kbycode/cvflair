@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from .annotators import (
     HUD_POSITIONS,
+    BlurAnnotator,
     BoxAnnotator,
     BoxCornerAnnotator,
     BracketBoxAnnotator,
@@ -31,6 +32,7 @@ from .annotators import (
     RoundBoxAnnotator,
     TargetBoxAnnotator,
     VertexAnnotator,
+    ZoneAnnotator,
 )
 from .camera import Camera, CameraError
 from .colors import Color, ColorLookup, ColorPalette
@@ -43,6 +45,8 @@ __version__ = "0.9.0"
 
 __all__ = [
     "BOX_STYLES",
+    "BlurAnnotator",
+    "ZoneAnnotator",
     "HUD_POSITIONS",
     "BoxAnnotator",
     "BoxCornerAnnotator",

@@ -18,6 +18,7 @@ import numpy as np
 
 from .annotators import (
     HUD_POSITIONS,
+    BlurAnnotator,
     BoxAnnotator,
     BoxCornerAnnotator,
     BracketBoxAnnotator,
@@ -31,6 +32,7 @@ from .annotators import (
     RoundBoxAnnotator,
     TargetBoxAnnotator,
     VertexAnnotator,
+    ZoneAnnotator,
 )
 from .colors import Color, ColorLookup, ColorPalette, resolve_palette
 from .keypoints import Skeleton, resolve_skeleton
@@ -92,6 +94,9 @@ class Theme:
     #: Kutunun altında güven skorunu gösteren ince bar.
     confidence_bar: bool = False
     confidence_bar_height: int = 4
+    #: Kutu içini gizleme: None, "blur" ya da "pixelate". Çerçeveden önce uygulanır.
+    hide: str | None = None
+    hide_strength: int = 15
     text_color: Any = field(default_factory=lambda: Color.BLACK)
     text_scale: float = 0.5
     text_thickness: int = 1
@@ -165,6 +170,12 @@ class Theme:
             if self.labels
             else None
         )
+        self._blur_annotator = (
+            BlurAnnotator(mode=self.hide, strength=self.hide_strength)
+            if self.hide is not None
+            else None
+        )
+        self._zone_annotator = ZoneAnnotator(color=self.palette, thickness=self.thickness)
         self._confidence_bar_annotator = (
             ConfidenceBarAnnotator(
                 color=self.palette,
@@ -279,6 +290,9 @@ class Theme:
         the theme has one -- ``{"FPS": 30, "Objects": 3}`` and so on.
         """
         if len(detections):
+            # Gizleme en altta: çerçeve ve etiket bulanıklığın üstünde kalmalı.
+            if self._blur_annotator is not None:
+                self._blur_annotator.annotate(scene, detections)
             if self._glow_annotator is not None:
                 self._glow_annotator.annotate(scene, detections)
             self._box_annotator.annotate(scene, detections)
@@ -290,6 +304,25 @@ class Theme:
         if self._hud_annotator is not None and stats:
             self._hud_annotator.annotate(scene, stats)
         return scene
+
+    def annotate_zone(
+        self,
+        scene: np.ndarray,
+        points: Any,
+        fill_opacity: float = 0.0,
+        closed: bool = True,
+        color_index: int = 0,
+    ) -> np.ndarray:
+        """
+        Draw a polygon or a line in the theme's colours.
+
+        Only the drawing is here: whether a detection falls inside the region is
+        the caller's decision, and cvflair does not make it.
+        """
+        annotator = self._zone_annotator
+        annotator.fill_opacity = min(max(float(fill_opacity), 0.0), 1.0)
+        annotator.closed = bool(closed)
+        return annotator.annotate(scene, points, color_index=color_index)
 
     def annotate_keypoints(
         self,
