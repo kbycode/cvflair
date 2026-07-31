@@ -12,6 +12,30 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
   kapatılabilir.
 - **Güven barı:** `Theme(confidence_bar=True)` kutunun altına skorla orantılı ince
   bir çubuk çizer. Güveni olmayan tespitlerde çizilmez.
+- **Kutu içini gizleme:** `Theme(hide="blur")` ya da `"pixelate"`. Çerçeveden önce
+  uygulanıyor, böylece kutu çizgisi ve etiket gizlemenin üstünde net kalıyor.
+- **Bölge çizimi:** `theme.annotate_zone(scene, points, fill_opacity=...)` poligon
+  ya da açık çizgi çizer. Yalnızca çizim: bir tespitin bölgenin içinde olup
+  olmadığına cvflair karar vermiyor.
+- **Segmentasyon maskesi.** `Detections.mask` maskeleri taşıyor, `Theme(masks=...,
+  mask_opacity=..., mask_outline=...)` çiziyor; maske yoksa yok sayılıyor. Maliyeti
+  46 ms'den 10,4 ms'ye indi: iş tüm kare yerine nesnenin penceresine indirildi ve
+  dizin atama yerine OpenCV'nin maskeli kopyası kullanıldı.
+- **`sketch` çerçeve biçimi** — elle çizilmiş gibi titrek, iki kere üstünden
+  geçilmiş dikdörtgen. Titreşim kutunun konumundan türetilen tohumla üretiliyor:
+  aynı nesne kare kare aynı çiziliyor, desen ekranda kaynamıyor. `wobble` ve
+  `sketch_passes` ile ayarlanır.
+- **Nabız:** `Theme(pulse=True)` kutunun çevresinde açılıp sönen bir halka çizer.
+  Evre saatten okunuyor, duran karede bile hareket ediyor; kaydedilen videoda ya
+  da testte tekrarlanabilir olması için `annotate(..., moment=...)` verilebilir.
+- **Takip izi:** `Theme(trace=True, trace_length=...)` takip edilen nesnelerin
+  geçtiği yolu çiziyor, iz geriye doğru inceliyor ve soluyor. Yalnızca
+  `tracker_id` taşıyan tespitlerde çalışıyor — cvflair takip etmiyor. Bir süre
+  görünmeyen kimlikler unutuluyor; `theme.reset_trace()` hepsini siliyor.
+
+### Değişti
+- Ölçüm sayıları yenilendi ve ölçüt en iyi kare süresine çevrildi: ortanca, arka
+  plan yüküyle koşudan koşuya %20 oynuyordu.
 
 ## 0.9.0
 

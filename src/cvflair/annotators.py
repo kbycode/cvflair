@@ -12,6 +12,8 @@ OpenCV needs, and the annotator instances are meant to be built once and reused
 from __future__ import annotations
 
 import math
+import time
+from collections import deque
 from typing import Any
 
 import cv2
@@ -29,6 +31,9 @@ __all__ = [
     "BracketBoxAnnotator",
     "CrosshairAnnotator",
     "TargetBoxAnnotator",
+    "SketchBoxAnnotator",
+    "PulseAnnotator",
+    "TraceAnnotator",
     "LabelAnnotator",
     "ConfidenceBarAnnotator",
     "BlurAnnotator",
@@ -381,6 +386,191 @@ class TargetBoxAnnotator(_OutlineAnnotator):
 
 
 # -- labels -----------------------------------------------------------------
+
+
+class SketchBoxAnnotator(_OutlineAnnotator):
+    """
+    A rectangle that looks drawn by hand: wobbling lines, gone over twice.
+
+    The wobble is seeded from the box itself, so the same box wobbles the same
+    way on every frame -- a random jitter per frame would boil and look broken.
+    """
+
+    def __init__(self, *args: Any, wobble: float = 2.5, passes: int = 2, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.wobble = max(0.0, float(wobble))
+        self.passes = max(1, int(passes))
+
+    def draw(self, scene, box, colour, accent) -> None:
+        x1, y1, x2, y2 = box
+        if x2 - x1 <= 0 or y2 - y1 <= 0:
+            return
+
+        # Konum sekizer piksellik ızgaraya yuvarlanıyor: tespit kutusu kare kare
+        # bir iki piksel oynadığında desen sabit kalıyor, ancak nesne gerçekten
+        # yer değiştirdiğinde yenileniyor.
+        grid = (abs(x1) // 8, abs(y1) // 8, abs(x2) // 8)
+        seed = (grid[0] * 73856093) ^ (grid[1] * 19349663) ^ (grid[2] * 83492791)
+        rng = np.random.default_rng(seed % (2**32))
+        corners = np.array([(x1, y1), (x2, y1), (x2, y2), (x1, y2)], dtype=np.float64)
+
+        # Kutunun bütün kenarları -- her ikinci geçiş dahil -- tek bir dizide
+        # üretilip tek bir OpenCV çağrısıyla çiziliyor. Kenar başına ayrı hesap
+        # ve ayrı çağrı aynı görüntüyü verir ama ölçümde maliyetin çoğu oraya
+        # gidiyordu: diziler küçük, çağrı sayısı çok.
+        starts = np.tile(corners, (self.passes, 1))
+        ends = np.tile(np.roll(corners, -1, axis=0), (self.passes, 1))
+
+        steps = int(min(max(max(x2 - x1, y2 - y1) // 18, 3), 16))
+        ratios = np.arange(steps + 1, dtype=np.float64) / steps
+        # Tek bir sapma sütunu hem x'e hem y'ye ekleniyor: kalem çizgiden
+        # çapraz kayıyor, dik değil.
+        drift = rng.uniform(-self.wobble, self.wobble, size=(len(starts), steps + 1, 1))
+        drift[:, 0] = drift[:, -1] = 0.0  # uçlar köşelere çakılı
+
+        spans = (ends - starts)[:, None, :]
+        points = starts[:, None, :] + ratios[None, :, None] * spans + drift
+        cv2.polylines(
+            scene, list(points.round().astype(np.int32)), False,
+            colour, self.thickness, cv2.LINE_AA,
+        )
+
+
+class PulseAnnotator(_OutlineAnnotator):
+    """
+    A ring that swells and fades around each box: the lock-on look.
+
+    The phase comes from the clock, so the effect keeps moving even on a frozen
+    frame. Pass ``moment`` to drive it yourself -- a GIF or a test wants the
+    same frame to look the same every run.
+    """
+
+    def __init__(self, *args: Any, speed: float = 1.4, reach: int = 14, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.speed = float(speed)
+        #: How far the ring travels away from the box at its widest.
+        self.reach = max(1, int(reach))
+        self._phase = 0.0
+
+    def annotate(
+        self, scene: np.ndarray, detections: Any, moment: float | None = None
+    ) -> np.ndarray:
+        clock = time.monotonic() if moment is None else float(moment)
+        self._phase = (clock * self.speed) % 1.0
+        return super().annotate(scene, detections)
+
+    def draw(self, scene, box, colour, accent) -> None:
+        grow = int(self.reach * self._phase)
+        # Halka açıldıkça sönüyor: rengi arka plana doğru karartmak, kare kopyası
+        # gerektiren gerçek saydamlıktan çok daha ucuz.
+        fade = max(0.05, 1.0 - self._phase)
+        faded = tuple(int(channel * fade) for channel in colour)
+        cv2.rectangle(
+            scene,
+            (box[0] - grow, box[1] - grow),
+            (box[2] + grow, box[3] + grow),
+            faded,
+            self.thickness,
+        )
+
+
+class TraceAnnotator:
+    """
+    The path each tracked object has taken.
+
+    This is the one annotator that remembers anything: a short history of points
+    per ``tracker_id``. Detections without tracker ids draw nothing -- cvflair
+    does not track, it only draws what a tracker already decided.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        thickness: int = 2,
+        length: int = 32,
+        anchor: str = "bottom",
+        color_lookup: ColorLookup = ColorLookup.TRACK,
+        forget_after: int = 30,
+    ) -> None:
+        if anchor not in ("bottom", "center"):
+            raise ValueError(f"Unknown anchor {anchor!r}. Use 'bottom' or 'center'.")
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.thickness = max(1, int(thickness))
+        self.length = max(2, int(length))
+        self.anchor = anchor
+        self.color_lookup = color_lookup
+        #: Kaç kare görünmeyen kimliğin izi unutulur.
+        self.forget_after = max(1, int(forget_after))
+        self._paths: dict[int, deque[tuple[int, int]]] = {}
+        self._last_seen: dict[int, int] = {}
+        self._frame = 0
+
+    def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
+        tracker_id = getattr(detections, "tracker_id", None)
+        if tracker_id is None:
+            return scene
+
+        self._frame += 1
+        for index in range(len(detections)):
+            box = _int_box(detections.xyxy[index])
+            if box is None:
+                continue
+            identity = int(tracker_id[index])
+            point = (
+                (box[0] + box[2]) // 2,
+                box[3] if self.anchor == "bottom" else (box[1] + box[3]) // 2,
+            )
+            path = self._paths.setdefault(identity, deque(maxlen=self.length))
+            path.append(point)
+            self._last_seen[identity] = self._frame
+
+            colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
+            self._draw_path(scene, path, colour)
+
+        self._forget_stale()
+        return scene
+
+    #: İz kaç kademede inceltilip soldurulacak. Parça başına ayrı çizgi çekmek
+    #: yumuşak bir geçiş verirdi ama her parça ayrı bir OpenCV çağrısı demek;
+    #: birkaç kademe gözle aynı görünüp maliyeti kata böler.
+    BANDS = 4
+
+    def _draw_path(self, scene: np.ndarray, path: deque, colour: tuple[int, int, int]) -> None:
+        points = np.array(path, dtype=np.int32)
+        if len(points) < 2:
+            return
+
+        edges = np.linspace(0, len(points) - 1, self.BANDS + 1).astype(int)
+        for band in range(self.BANDS):
+            # Kademeler uçlarda bir nokta örtüşüyor, yoksa iz aralarından kopar.
+            chunk = points[edges[band] : edges[band + 1] + 1]
+            if len(chunk) < 2:  # kısa izde bazı kademelere nokta düşmez
+                continue
+            weight = (band + 1) / self.BANDS  # en yeni kademe en kalın
+            faded = tuple(int(channel * (0.35 + 0.65 * weight)) for channel in colour)
+            cv2.polylines(
+                scene, [chunk], False, faded,
+                max(1, int(round(self.thickness * weight))), cv2.LINE_AA,
+            )
+
+    def _forget_stale(self) -> None:
+        stale = [
+            identity
+            for identity, seen in self._last_seen.items()
+            if self._frame - seen > self.forget_after
+        ]
+        for identity in stale:
+            self._paths.pop(identity, None)
+            self._last_seen.pop(identity, None)
+
+    def reset(self) -> None:
+        """Bütün izleri unut -- kaynak değiştiğinde ya da akış baştan başladığında."""
+        self._paths.clear()
+        self._last_seen.clear()
+        self._frame = 0
+
+    def __repr__(self) -> str:
+        return f"TraceAnnotator(length={self.length}, tracked={len(self._paths)})"
 
 
 class LabelAnnotator:

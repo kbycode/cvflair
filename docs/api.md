@@ -23,12 +23,14 @@
 | Üye | Ne yapar |
 |---|---|
 | `Theme(...)` | Bütün çizim ayarları — bkz. [temalar](temalar.md) |
-| `theme.annotate(scene, detections, labels, stats)` | Kareye yerinde çizer, aynı diziyi döndürür |
+| `theme.annotate(scene, detections, labels, stats, moment)` | Kareye yerinde çizer, aynı diziyi döndürür |
+| `theme.annotate_zone(scene, points, fill_opacity)` | Poligon ya da çizgi çizer |
+| `theme.reset_trace()` | Biriken takip izlerini siler |
 | `theme.annotate_keypoints(scene, keypoints, skeleton)` | İskelet çizer — bkz. [noktalar](noktalar.md) |
 | `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
 | `BOX_STYLES` / `HUD_POSITIONS` | Geçerli değerler |
 | `Color`, `ColorPalette`, `ColorLookup` | Renk altyapısı; hex dizgeleri her yerde kabul edilir |
-| `cvflair.annotators` | Sekiz çerçeve biçimi, etiket plakası ve sayaç paneli sınıfları |
+| `cvflair.annotators` | Dokuz çerçeve biçimi, etiket plakası, iz, nabız ve panel sınıfları |
 
 ## Tespit ve model
 
@@ -63,25 +65,46 @@
 
 | Tema | ms/kare | 30 fps bütçesinin |
 |---|---|---|
-| `minimal` | 0,35 | %1 |
-| `hud` | 0,51 | %2 |
-| `cyberpunk` | 0,64 | %2 |
-| `pastel` | 2,8 | %8 |
-| `neon` | 4,1 | %12 |
+| `minimal` | 0,64 | %2 |
+| `hud` | 0,80 | %2 |
+| `cyberpunk` | 0,88 | %3 |
+| `pastel` | 3,1 | %9 |
+| `neon` | 4,2 | %13 |
+
+Ölçü, üç koşunun en iyi karesi: ortanca arka plan yüküyle koşudan koşuya %20
+oynuyor, en iyi süre oynamıyor.
+
+Etiket plakaları bu sürenin küçük olmayan bir parçası: aynı sahnede etiketler
+kapalıyken düz kutu 0,64 yerine 0,29 ms. Kutu başına metin ölçümü, plaka dolgusu
+ve `putText` var; plakaların çakışmadan yerleştirilmesi bunun üstüne 0,06 ms
+ekliyor.
+
+Kutunun üstüne binen çizimler, aynı sahnede düz kutuya (0,74 ms) göre:
+
+| Çizim | ms/kare | ek |
+|---|---|---|
+| `pulse` | 0,98 | +0,24 |
+| `trace` (32 nokta, 8 iz) | 1,8 | +1,1 |
+| `sketch` çerçeve | 4,4 | +3,7 |
+
+`sketch` pahalı olan: kutu başına sekiz titrek çoklu-çizgi, hepsi kenar
+yumuşatmalı. Kenar başına ayrı hesap ve ayrı OpenCV çağrısı yapan ilk hâli
+9,4 ms'ydi; kutunun bütün kenarları tek dizide üretilip tek çağrıda çizilince
+5 ms'nin altına indi. Geri kalanı rasterleştirmenin kendisi.
 
 Maske çizimi ayrı bir hikâye — piksel başına iş olduğu için maliyeti kapladığı
 alanla orantılı. Aynı sahnede 8 maske (her biri kutusuna içten teğet elips):
 
 | Çizim | ms/kare |
 |---|---|
-| dolgu + kontur | 10,7 |
-| yalnız kontur (`mask_opacity=0`) | 7,8 |
+| dolgu + kontur | 10,4 |
+| yalnız kontur (`mask_opacity=0`) | 7,6 |
 
 Maske yalnızca tespitte varsa çizilir; olmayan sahnede ölçülebilir bir maliyeti
 yok. İlk sürümde bu 46 ms'ydi: iş tüm kare yerine nesnenin penceresine indirildi
 ve dizin atama yerine OpenCV'nin maskeli kopyası kullanıldı.
 
-Karşılaştırma tabanı, elle yazılmış bir OpenCV kutu+etiket döngüsü: 0,34 ms.
+Karşılaştırma tabanı, elle yazılmış bir OpenCV kutu+etiket döngüsü: 0,32 ms.
 `minimal` onunla aynı hızda; aradaki fark tamamen çizilen şeyden geliyor.
 Pahalı olan yuvarlak köşe: kenar yumuşatmalı yay, düz çizgiye göre dört kat
 maliyetli ve her kutuda dört tane var. `neon` bunun üstüne bir de hâle geçişi

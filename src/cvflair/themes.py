@@ -30,8 +30,11 @@ from .annotators import (
     HudAnnotator,
     LabelAnnotator,
     MaskAnnotator,
+    PulseAnnotator,
     RoundBoxAnnotator,
+    SketchBoxAnnotator,
     TargetBoxAnnotator,
+    TraceAnnotator,
     VertexAnnotator,
     ZoneAnnotator,
 )
@@ -41,12 +44,14 @@ from .keypoints import Skeleton, resolve_skeleton
 __all__ = ["Theme", "get_theme", "available_themes", "BoxStyle", "BOX_STYLES"]
 
 BoxStyle = Literal[
-    "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target"
+    "box", "round", "corner", "dashed", "dashed_corner",
+    "bracket", "crosshair", "target", "sketch",
 ]
 
 #: Every accepted ``box_style``.
 BOX_STYLES: tuple[str, ...] = (
-    "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
+    "box", "round", "corner", "dashed", "dashed_corner",
+    "bracket", "crosshair", "target", "sketch",
 )
 
 
@@ -84,6 +89,10 @@ class Theme:
     center_size: int = 10
     #: Rectangle weight behind the corners of ``"target"``.
     edge_thickness: int = 1
+    #: Hand-drawn look for ``"sketch"``: how far the line may wander, and how
+    #: many times it is gone over.
+    wobble: float = 2.5
+    sketch_passes: int = 2
     #: Draw a dimmed, thicker outline behind the main one to fake a glow.
     glow: bool = False
     glow_thickness: int = 5
@@ -98,6 +107,16 @@ class Theme:
     #: Kutu içini gizleme: None, "blur" ya da "pixelate". Çerçeveden önce uygulanır.
     hide: str | None = None
     hide_strength: int = 15
+    #: Kilitlenme etkisi: kutunun çevresinde açılıp sönen bir halka. Faz saate
+    #: bağlı, yani duran karede bile hareket eder.
+    pulse: bool = False
+    pulse_speed: float = 1.4
+    pulse_reach: int = 14
+    #: Takip edilen nesnelerin geçtiği yol. Yalnızca ``tracker_id`` taşıyan
+    #: tespitlerde çizilir; kare kare biriktiği için tema burada durum tutar.
+    trace: bool = False
+    trace_length: int = 32
+    trace_anchor: str = "bottom"
     #: Segmentasyon maskesi çizimi; tespitte maske yoksa yok sayılır.
     masks: bool = True
     mask_opacity: float = 0.4
@@ -188,6 +207,28 @@ class Theme:
                 color_lookup=self.color_lookup,
             )
             if self.masks
+            else None
+        )
+        self._pulse_annotator = (
+            PulseAnnotator(
+                color=self.palette,
+                thickness=max(1, self.thickness - 1),
+                speed=self.pulse_speed,
+                reach=self.pulse_reach,
+                color_lookup=self.color_lookup,
+            )
+            if self.pulse
+            else None
+        )
+        self._trace_annotator = (
+            TraceAnnotator(
+                color=self.palette,
+                thickness=self.thickness,
+                length=self.trace_length,
+                anchor=self.trace_anchor,
+                color_lookup=self.color_lookup,
+            )
+            if self.trace
             else None
         )
         self._zone_annotator = ZoneAnnotator(color=self.palette, thickness=self.thickness)
@@ -281,6 +322,10 @@ class Theme:
                 arm_length=self.arm_length,
                 center_size=self.center_size,
             )
+        if self.box_style == "sketch":
+            return SketchBoxAnnotator(
+                **common, wobble=self.wobble, passes=self.sketch_passes
+            )
         if self.box_style == "target":
             return TargetBoxAnnotator(
                 **common,
@@ -296,13 +341,16 @@ class Theme:
         detections: Any,
         labels: Sequence[str] | None = None,
         stats: Mapping[str, Any] | None = None,
+        moment: float | None = None,
     ) -> np.ndarray:
         """
         Draw ``detections`` onto ``scene`` in place and return the same array.
 
         ``detections`` is cvflair's :class:`~cvflair.detections.Detections` or
         anything carrying the same fields. ``stats`` feeds the HUD panel when
-        the theme has one -- ``{"FPS": 30, "Objects": 3}`` and so on.
+        the theme has one -- ``{"FPS": 30, "Objects": 3}`` and so on. ``moment``
+        drives the pulse: leave it out for live video, hand over a frame time to
+        make the animation reproducible.
         """
         if len(detections):
             # Gizleme en altta: çerçeve ve etiket bulanıklığın üstünde kalmalı.
@@ -310,6 +358,10 @@ class Theme:
                 self._blur_annotator.annotate(scene, detections)
             if self._mask_annotator is not None:
                 self._mask_annotator.annotate(scene, detections)
+            if self._trace_annotator is not None:
+                self._trace_annotator.annotate(scene, detections)
+            if self._pulse_annotator is not None:
+                self._pulse_annotator.annotate(scene, detections, moment=moment)
             if self._glow_annotator is not None:
                 self._glow_annotator.annotate(scene, detections)
             self._box_annotator.annotate(scene, detections)
@@ -321,6 +373,11 @@ class Theme:
         if self._hud_annotator is not None and stats:
             self._hud_annotator.annotate(scene, stats)
         return scene
+
+    def reset_trace(self) -> None:
+        """Biriken izleri unut -- yeni bir kaynağa geçerken."""
+        if self._trace_annotator is not None:
+            self._trace_annotator.reset()
 
     def annotate_zone(
         self,

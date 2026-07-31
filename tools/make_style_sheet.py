@@ -1,9 +1,10 @@
 """
 README ve belgelerdeki görselleri üretir:
 
-* `docs/box-styles.png` — aynı tespit, sekiz çerçeve biçimi yan yana.
+* `docs/box-styles.png` — aynı tespit, bütün çerçeve biçimleri yan yana.
 * `docs/theme-<ad>.png` — her tema, kendi çerçeve biçimiyle, tam kare.
 * `docs/skeletons.png` — el ve poz iskeleti, her temada.
+* `docs/motion.png` — nabız halkasının evreleri ve takip izi.
 
 Çalıştırmak için:  python tools/make_style_sheet.py
 Kaynak `docs/city.png` ve kutu oranları `tools/make_demo_gif.py` ile ortak.
@@ -22,7 +23,7 @@ from cvflair.themes import BOX_STYLES
 
 DOCS = Path(__file__).resolve().parents[1] / "docs"
 OUTPUT = DOCS / "box-styles.png"
-COLUMNS = 4
+COLUMNS = 3  # dokuz biçim tam üç satır
 CAPTION_H = 26
 PAD = 26
 
@@ -137,15 +138,70 @@ def skeleton_cell(theme_name: str) -> np.ndarray:
     return frame
 
 
+def pad_to_grid(cells: list[np.ndarray], columns: int) -> np.ndarray:
+    """Son satırı boş hücreyle tamamlar; eksikse `vstack` genişlik uyuşmazlığı verir."""
+    cells = list(cells)  # çağıranın listesi büyümesin
+    while len(cells) % columns:
+        cells.append(np.full_like(cells[0], 24))
+    rows = [np.hstack(cells[index : index + columns]) for index in range(0, len(cells), columns)]
+    return np.vstack(rows)
+
+
+def pulse_cell(moment: float) -> np.ndarray:
+    """Nabız halkasının tek bir anı; şerit hâlinde döngü okunur hâle geliyor."""
+    width, height = 240, 220
+    frame = np.full((height, width, 3), 22, dtype=np.uint8)
+    theme = Theme(
+        box_style="corner", palette=BASE, thickness=3, corner_length=22,
+        pulse=True, pulse_reach=22, pulse_speed=1.0, labels=False,
+    )
+    theme.annotate(
+        frame,
+        Detections(xyxy=[[60, 50, 180, 170]], class_id=[0], confidence=[0.94]),
+        moment=moment,
+    )
+    cv2.putText(
+        frame, f"{moment:.2f}", (10, height - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+        (170, 170, 170), 1, cv2.LINE_AA,
+    )
+    return frame
+
+
+def trace_cell(width: int = 960) -> np.ndarray:
+    """Kırk kare boyunca dolaşan bir nesnenin bıraktığı iz."""
+    height = 220
+    frame = np.full((height, width, 3), 22, dtype=np.uint8)
+    theme = Theme(
+        box_style="round", palette=BASE, accent_palette=ACCENT, thickness=3,
+        trace=True, trace_length=36, labels=False,
+    )
+    for step in range(40):
+        left = 40 + step * (width - 140) // 40
+        top = 95 - int(45 * np.sin(step / 7))  # iz kare içinde kalsın
+        # Ara kareler yalnızca izi besliyor; ekrana yalnız sonuncusu çiziliyor.
+        canvas = frame if step == 39 else frame.copy()
+        theme.annotate(
+            canvas,
+            Detections(
+                xyxy=[[left, top, left + 56, top + 56]],
+                class_id=[0], confidence=[0.9], tracker_id=[1],
+            ),
+        )
+    cv2.putText(
+        frame, "trace", (10, height - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+        (170, 170, 170), 1, cv2.LINE_AA,
+    )
+    return frame
+
+
 def main() -> None:
     source = cv2.imread(str(BACKGROUND))
     if source is None:
         raise SystemExit(f"Kaynak görsel okunamadı: {BACKGROUND}")
 
     cells = [cell(style, source) for style in BOX_STYLES]
-    rows = [np.hstack(cells[i : i + COLUMNS]) for i in range(0, len(cells), COLUMNS)]
     DOCS.mkdir(exist_ok=True)
-    cv2.imwrite(str(OUTPUT), np.vstack(rows))
+    cv2.imwrite(str(OUTPUT), pad_to_grid(cells, COLUMNS))
     print(f"{OUTPUT}  ({len(cells)} biçim)")
 
     for name in available_themes():
@@ -154,11 +210,14 @@ def main() -> None:
         print(f"{path}")
 
     skeletons = [skeleton_cell(name) for name in available_themes()]
-    while len(skeletons) % 3:
-        skeletons.append(np.full_like(skeletons[0], 18))
-    rows = [np.hstack(skeletons[i : i + 3]) for i in range(0, len(skeletons), 3)]
     path = DOCS / "skeletons.png"
-    cv2.imwrite(str(path), np.vstack(rows))
+    cv2.imwrite(str(path), pad_to_grid(skeletons, 3))
+    print(f"{path}")
+
+    phases = np.hstack([pulse_cell(moment) for moment in (0.05, 0.35, 0.65, 0.95)])
+    motion = np.vstack([phases, trace_cell(phases.shape[1])])
+    path = DOCS / "motion.png"
+    cv2.imwrite(str(path), motion)
     print(f"{path}")
 
 

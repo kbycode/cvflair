@@ -17,12 +17,17 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 *Aynı tespitler, dört tema. `tools/make_demo_gif.py` ile üretildi: `docs/city.png`
 üzerine çizilen kutular. Başka bir görsel için `--background <yol>`.*
 
-**Sekiz çerçeve biçimi, beş hazır tema, el ve poz iskeleti — hepsi tek `Theme(...)` satırıyla.**
+**Dokuz çerçeve biçimi, beş hazır tema, el ve poz iskeleti — hepsi tek `Theme(...)` satırıyla.**
 Hiçbirini kurmadan denemek için: **[tema playground →](https://kbycode.github.io/cvflair/)**
 Önizlemede kutu ve iskelet kipleri ayrı ayrı denenebiliyor.
 Ayarları oynat, hazır Python kodunu kopyala; sayfa tamamen tarayıcıda çalışır.
 
 ![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
+
+Kutunun üstüne binen çizimler de var: kilitlenme nabzı ve takip edilen nesnenin
+bıraktığı iz.
+
+![nabız ve iz](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/motion.png)
 
 ## Kurulum
 
@@ -77,7 +82,7 @@ cam.show(frame, keypoints=KeyPoints(xy=el_noktalari), skeleton=HAND_21)
 
 | | |
 |---|---|
-| [Temalar ve çerçeve biçimleri](https://github.com/kbycode/cvflair/blob/main/docs/temalar.md) | Beş tema, sekiz biçim, ikinci renk, renk paleti, sayaç paneli, kendi temanı yazmak |
+| [Temalar ve çerçeve biçimleri](https://github.com/kbycode/cvflair/blob/main/docs/temalar.md) | Beş tema, dokuz biçim, nabız ve iz, ikinci renk, renk paleti, sayaç paneli, kendi temanı yazmak |
 | [Nokta ve iskelet çizimi](https://github.com/kbycode/cvflair/blob/main/docs/noktalar.md) | El ve poz iskeletleri, `KeyPoints`, hazır topolojiler, kendi iskeletin |
 | [Model bağlama ve tespitler](https://github.com/kbycode/cvflair/blob/main/docs/modeller.md) | `stream(model=...)`, kendi detektörün, `Detections`, Ultralytics ayarları, video dosyaları |
 | [API özeti ve iç işleyiş](https://github.com/kbycode/cvflair/blob/main/docs/api.md) | Bütün genel arayüz, thread ve kuyruk davranışı, ölçülmüş performans |

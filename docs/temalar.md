@@ -29,7 +29,7 @@ Adları `available_themes()` listeler.
 
 ![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
 
-`box_style` sekiz değerden birini alır:
+`box_style` dokuz değerden birini alır:
 
 | Değer | Görünüm | Ayarları |
 |---|---|---|
@@ -41,10 +41,16 @@ Adları `available_themes()` listeler.
 | `bracket` | yuvarlak dirsekli köşe ayracı (köşe + yuvarlak karışımı) | `corner_length`, `roundness` |
 | `crosshair` | kenar ortası çentikleri + merkez artısı | `arm_length`, `center_size` |
 | `target` | ince çerçeve + kalın köşeler | `corner_length`, `edge_thickness` |
+| `sketch` | elle çizilmiş gibi titrek çerçeve | `wobble`, `sketch_passes` |
 
 Hepsi `cvflair.annotators` içinde, OpenCV çizim çağrılarıyla tanımlıdır; renk
-paleti ve `ColorLookup` davranışı sekizinde de aynıdır. Geçerli adlar
+paleti ve `ColorLookup` davranışı dokuzunda da aynıdır. Geçerli adlar
 `cvflair.BOX_STYLES` demetinde.
+
+`sketch` biçiminde titreşim, kutunun konumundan türetilen bir tohumla üretilir:
+aynı nesne kare kare aynı çizilir, yoksa desen ekranda kaynar. Konum sekizer
+piksellik ızgaraya yuvarlandığı için tespit kutusunun bir iki piksellik oynaması
+deseni bozmaz.
 
 ### İkinci renk
 
@@ -60,6 +66,35 @@ theme = Theme(
     thickness=3,
 )
 ```
+
+## Nabız ve iz
+
+![nabız ve iz](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/motion.png)
+
+`pulse` kutunun çevresinde açılıp sönen bir halka çizer — kilitlenme etkisi.
+Evre saatten okunur, yani duran karede bile hareket eder:
+
+```python
+theme = Theme(box_style="corner", pulse=True, pulse_speed=1.4, pulse_reach=14)
+```
+
+Kaydedilen bir videoda ya da testte aynı karenin aynı görünmesi gerekiyorsa
+evreyi kendin verebilirsin:
+
+```python
+theme.annotate(frame, detections, moment=frame_index / fps)
+```
+
+`trace` takip edilen nesnelerin geçtiği yolu çizer. Yalnızca `tracker_id` taşıyan
+tespitlerde çalışır: cvflair takip etmez, takip edicinin verdiği kimlikleri çizer.
+
+```python
+theme = Theme(trace=True, trace_length=32, trace_anchor="bottom")
+```
+
+Yol biriktiği için tema burada durum tutar; kaynak değiştiğinde
+`theme.reset_trace()` biriken izleri siler. Bir süre görünmeyen kimlikler kendi
+kendine unutulur, uzun akışta bellek büyümez.
 
 ## Renk paleti
 

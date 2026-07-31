@@ -110,8 +110,9 @@ def main() -> None:
     print("|---|---|---|---|")
     print(f"| _elle OpenCV_ | {baseline:.2f} | {1000 / baseline:.0f} | — |")
 
-    def draw_with(theme: Theme) -> Callable[[], None]:
-        return lambda: theme.annotate(frame, detections, labels=labels)
+    def draw_with(theme: Theme, data: Detections | None = None) -> Callable[[], None]:
+        boxes = detections if data is None else data
+        return lambda: theme.annotate(frame, boxes, labels=labels)
 
     for name in available_themes():
         median, _ = measure(draw_with(get_theme(name)), args.repeat)
@@ -128,6 +129,28 @@ def main() -> None:
     print(f"\nMaske (aynı sahne, {args.boxes} maske):")
     print(f"  dolgu + kontur : {fill_ms:.2f} ms  (+{fill_ms - baseline:.2f})")
     print(f"  yalnız kontur  : {line_ms:.2f} ms  (+{line_ms - baseline:.2f})")
+
+    # Kutunun üstüne binen çizimler: her biri aynı sahnede, düz kutuya göre.
+    plain = Theme(box_style="box")
+    plain_ms, _ = measure(lambda: plain.annotate(frame, detections, labels=labels), args.repeat)
+    tracked = Detections(
+        xyxy=detections.xyxy,
+        class_id=detections.class_id,
+        confidence=detections.confidence,
+        names=detections.names,
+        tracker_id=np.arange(len(detections)),
+    )
+    extras: list[tuple[str, Theme, Detections]] = [
+        ("sketch (çerçeve)", Theme(box_style="sketch"), detections),
+        ("pulse", Theme(box_style="box", pulse=True), detections),
+        ("trace (32 nokta)", Theme(box_style="box", trace=True), tracked),
+    ]
+    print(f"\nEk çizimler (düz kutu {plain_ms:.2f} ms üzerine):")
+    for name, theme, data in extras:
+        for _ in range(40):  # iz dolsun, ölçüm tam uzunlukta yapılsın
+            theme.annotate(frame, data, labels=labels)
+        median, _ = measure(draw_with(theme, data), args.repeat)
+        print(f"  {name:18s}: {median:5.2f} ms  (+{median - plain_ms:.2f})")
 
     # Tema kurulumunun kendi maliyeti: annotator'lar burada hazırlanıyor. Döngü
     # içinde tema kurmak bu süreyi her kareye ekler.
