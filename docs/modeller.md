@@ -73,6 +73,15 @@ Detections.from_ultralytics(result)      # Ultralytics Results nesnesinden
 `from_ultralytics` yalnızca kutuları taşır; segmentasyon maskeleri ve döndürülmüş
 kutular aktarılmaz.
 
+### Bozuk kutular
+
+Model çıktısı her zaman temiz gelmez: sıfıra bölme NaN üretir, ıraksayan bir
+takipçi sonsuz koordinat verebilir. Böyle bir kutu çizilemez — o tespit atlanır,
+aynı karedeki diğerleri normal çizilir. Akış bir bozuk kutu yüzünden durmaz.
+
+Sonlu ama uçuk değerler (negatif, ters, kadrajı taşan) çizilir; koordinatlar
+yalnızca OpenCV'nin sınırına kırpılır, kadraja değil.
+
 ### Başka kütüphanelerin tespitleri
 
 Çizim, tespit nesnesini alan adlarına göre okur. Bu yüzden aynı alanları taşıyan

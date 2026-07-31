@@ -36,6 +36,11 @@ __all__ = [
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
+#: OpenCV drawing raises on coordinates past the int32 range. Boxes are clipped
+#: to this instead of to the frame -- a box hanging off the edge should still be
+#: drawn as far as it reaches.
+COORDINATE_LIMIT = 100_000
+
 #: Where a HUD panel can sit.
 HUD_POSITIONS: tuple[str, ...] = ("top_left", "top_right", "bottom_left", "bottom_right")
 
@@ -121,6 +126,20 @@ def _rounded_fill(
         cv2.circle(scene, centre, radius, colour, -1, cv2.LINE_AA)
 
 
+def _int_box(xyxy: np.ndarray) -> tuple[int, int, int, int] | None:
+    """
+    Turn one box into drawable integers, or ``None`` when it cannot be drawn.
+
+    Model output does contain NaN and infinity now and then -- a division by zero,
+    a tracker that diverged. OpenCV raises on those, so a single bad detection used
+    to take the whole stream down; now that one is skipped and the rest are drawn.
+    """
+    if not np.all(np.isfinite(xyxy)):
+        return None
+    clipped = np.clip(xyxy, -COORDINATE_LIMIT, COORDINATE_LIMIT)
+    return (int(clipped[0]), int(clipped[1]), int(clipped[2]), int(clipped[3]))
+
+
 def _corner_arm(width: int, height: int, corner_length: int) -> int:
     return int(min(corner_length, min(width, height) / 2))
 
@@ -153,14 +172,16 @@ class _OutlineAnnotator:
 
     def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
         for index in range(len(detections)):
-            x1, y1, x2, y2 = detections.xyxy[index].astype(int)
+            box = _int_box(detections.xyxy[index])
+            if box is None:
+                continue
             colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
             accent = (
                 resolve_color(self.accent_color, detections, index, self.color_lookup).as_bgr()
                 if self.accent_color is not None
                 else colour
             )
-            self.draw(scene, (int(x1), int(y1), int(x2), int(y2)), colour, accent)
+            self.draw(scene, box, colour, accent)
         return scene
 
     def draw(
@@ -372,7 +393,10 @@ class LabelAnnotator:
         height_limit = scene.shape[0]
 
         for index in range(len(detections)):
-            x1, y1 = detections.xyxy[index][:2].astype(int)
+            box = _int_box(detections.xyxy[index])
+            if box is None:
+                continue
+            x1, y1 = box[0], box[1]
             colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
             text = texts[index]
 

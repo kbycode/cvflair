@@ -4,6 +4,12 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
 ## Yayınlanmamış
 
+### Düzeltildi
+- Bozuk kutu artık akışı düşürmüyor. `NaN`, sonsuz ve int32 sınırını aşan
+  koordinatlarda OpenCV hata fırlatıyordu; tek bir bozuk tespit bütün döngüyü
+  durduruyordu. Çizilemeyen kutu atlanıyor, aynı karedeki diğerleri çiziliyor;
+  sonlu ama uçuk koordinatlar güvenli aralığa kırpılıyor (kadraja değil).
+
 ### Belgeler
 - README vitrin haline getirildi (304 → 119 satır); ayrıntı `docs/` altında üç
   markdown dosyasına bölündü: [temalar](docs/temalar.md), [modeller](docs/modeller.md),
