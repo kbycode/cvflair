@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.8.1
 
 ### Düzeltildi
 - Bozuk kutu artık akışı düşürmüyor. `NaN`, sonsuz ve int32 sınırını aşan
