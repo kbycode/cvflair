@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.9.0
 
 ### Eklendi
 - **Nokta ve iskelet çizimi.** `KeyPoints` taşıyıcısı, `EdgeAnnotator` (kemikler)
@@ -20,7 +20,8 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 - Playground'da **iskelet önizleme kipi**: el ve poz iskeleti canlı çiziliyor,
   kemik/eklem ayarları oradan yapılıyor. Kutu ve etiket ayarları o kipte
   gizleniyor, üretilen kod da iskelet kullanımını gösteriyor — iki aile
-  birbirine karışmıyor.
+  birbirine karışmıyor. Palet altındaki adlar da kipe göre değişiyor
+  (kutularda sahnedeki nesneler, iskelette el ve poz).
 
 ## 0.8.1
 

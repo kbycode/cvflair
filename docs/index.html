@@ -428,6 +428,8 @@ const I18N = {
     "repo": "Repo",
     "field.preview": "Preview",
     "preview.boxes": "boxes",
+    "skeleton.hand": "hand",
+    "skeleton.pose": "pose",
     "preview.skeleton": "skeleton",
     "section.pose": "Skeleton",
     "field.poseThickness": "Bone thickness",
@@ -500,6 +502,8 @@ const I18N = {
     "repo": "Depo",
     "field.preview": "Önizleme",
     "preview.boxes": "kutular",
+    "skeleton.hand": "el",
+    "skeleton.pose": "poz",
     "preview.skeleton": "iskelet",
     "section.pose": "İskelet",
     "field.poseThickness": "Kemik kalınlığı",
@@ -608,6 +612,9 @@ function initialLanguage() {
 }
 
 // İskelet topolojileri: src/cvflair/keypoints.py içindekilerle birebir aynı.
+//: İskelet kipinde paletin ilk iki rengi bu iskeletlere gidiyor.
+const SKELETON_TARGETS = ["skeleton.hand", "skeleton.pose"];
+
 const HAND_EDGES = [
   [0, 1], [1, 2], [2, 3], [3, 4],
   [0, 5], [5, 6], [6, 7], [7, 8],
@@ -1543,12 +1550,15 @@ function renderSwatches() {
     }
 
     // Hangi rengin neye gittiği yazılı olmazsa palet sadece renk yığını gibi
-    // duruyor; sahnedeki üç nesnenin adı doğrudan altına konuyor.
+    // duruyor; önizlemedeki nesnenin adı doğrudan altına konuyor. Ad, seçili
+    // kipe göre değişir: kutularda sahnedeki nesneler, iskelette el ve poz.
     const caption = document.createElement("small");
-    const actor = ACTORS[index];
-    caption.textContent = actor ? actor.label : String(index + 1);
-    if (!actor) caption.className = "unused";
-    caption.title = actor ? t("swatch.mapped") : t("swatch.spare");
+    const target = state.preview === "skeleton"
+      ? (SKELETON_TARGETS[index] ? t(SKELETON_TARGETS[index]) : null)
+      : (ACTORS[index] ? ACTORS[index].label : null);
+    caption.textContent = target || String(index + 1);
+    if (!target) caption.className = "unused";
+    caption.title = target ? t("swatch.mapped") : t("swatch.spare");
     wrap.append(caption);
 
     holder.append(wrap);

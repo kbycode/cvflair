@@ -38,7 +38,7 @@ from .keypoints import HAND_21, POSE_17, SKELETONS, KeyPoints, Skeleton
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 
 __all__ = [
     "BOX_STYLES",
