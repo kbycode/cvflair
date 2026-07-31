@@ -2,6 +2,14 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Depo
+- PyPI yayını otomatikleşti: `v*` etiketi push edilince paket derlenip yükleniyor.
+  Kimlik doğrulama token değil, GitHub'ın imzaladığı kısa ömürlü OIDC kimliği
+  (trusted publishing); depoda ve diskte tutulan bir sır yok. Yükleme `pypi`
+  environment'ındaki onay kuralını bekliyor.
+
 ## 0.7.0
 
 ### Hızlandı

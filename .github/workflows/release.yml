@@ -1,10 +1,10 @@
 name: Yayın
 
-# Sürüm etiketi push edilince derleme ve metadata denetimi çalışır:
-#   git tag -a v0.2.0 -m "..." && git push origin v0.2.0
-# Yükleme adımı elle tetiklenir (Actions -> Yayın -> Run workflow); PyPI tarafında
-# "trusted publisher" kaydı yapılmadan çalışmaz ve zaten yayınlanmış bir sürümü
-# etiketlemek yüklemeyi tekrar denememeli.
+# Sürüm etiketi push edilince paket derlenir ve PyPI'a yüklenir:
+#   git tag -a v0.8.0 -m "..." && git push origin v0.8.0
+# Yükleme, `pypi` environment'ındaki onay kuralı nedeniyle bekler; Actions'tan
+# onaylanınca tamamlanır. Elle tetikleme (Run workflow) da açık: zaten yayınlanmış
+# bir sürüm `skip-existing` ile atlandığı için kurulumu denemek zararsız.
 on:
   push:
     tags: ["v*"]
@@ -39,7 +39,6 @@ jobs:
   publish:
     name: PyPI'a yükle
     needs: build
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     # PyPI'daki "trusted publisher" kaydıyla aynı environment adı olmalı.
