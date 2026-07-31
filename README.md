@@ -255,9 +255,13 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
-pytest
+pytest              # kamera gerektirmez
 ruff check .
+mypy                # paket py.typed gönderiyor, tip iddiası denetleniyor
 ```
+
+Katkı akışı, kapsam sınırları ve yeni tema ekleme adımları:
+[CONTRIBUTING.md](CONTRIBUTING.md)
 
 Testler kamera gerektirmez: `Camera`'ya `capture_factory` üzerinden sahte bir
 `VideoCapture` verilir, temalar da sentetik kareler üzerinde doğrulanır.
