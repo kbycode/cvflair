@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.6.0
 
 ### Eklendi
 - `Camera(drop_frames=False)` — okuyucu tüketiciyi bekler. Canlı kamerada eski kareyi

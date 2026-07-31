@@ -35,7 +35,7 @@ from .detections import Detections
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "BOX_STYLES",
