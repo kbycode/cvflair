@@ -121,6 +121,14 @@ for frame, detections in cam.stream(model=detector):
 Etiket metni doğrudan da verilebilir: `cam.show(frame, detections, labels=[...])`.
 Pencere yönetimi uygulamaya aitse `cam.annotate(frame, detections)` yalnızca çizim yapar.
 
+`show()` basılan tuşu da tutar, böylece demolar klavyeye cevap verebilir:
+
+```python
+cam.show(frame, detections)
+if cam.pressed("1"):
+    cam.theme = "neon"
+```
+
 ## Temalar
 
 | Tema | Görünüm | |
@@ -228,6 +236,7 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
 | `cam.theme` | Okunur/yazılır; `cam.theme = "minimal"` çalışır |
 | `cam.frames_read` / `cam.frames_dropped` | Okunan ve tüketici yetişemediği için atılan kare sayısı |
 | `cam.measured_fps` | Son 30 karenin ortalamasıyla ölçülen gerçek kare hızı |
+| `cam.key` / `cam.pressed(tuş)` | Son `show()` sırasında basılan tuş; yoksa `-1` |
 | `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
 | `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı; `from_ultralytics` ve `from_arrays` yardımcılarıyla |
 | `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir; `conf`, `iou`, `device` gibi ayarları taşır |

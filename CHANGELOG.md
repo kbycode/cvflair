@@ -4,6 +4,16 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
 ## Yayınlanmamış
 
+### Eklendi
+- `Camera.key` ve `Camera.pressed(tuş)` — `show()` artık basılan tuşu yutmuyor,
+  demolar klavyeye cevap verebiliyor. Çıkış tuşları (`q`, `Q`, ESC) aynı şekilde
+  çalışmaya devam ediyor.
+- `examples/theme_switcher.py` — rakam tuşlarıyla tema, `b` ile sayaç paneli.
+
+### Düzeltildi
+- `Camera.close()` artık pencere kapatılamadığında hata fırlatmıyor (başsız
+  ortamda ya da pencere zaten gitmişse).
+
 ### Depo
 - PyPI yayını otomatikleşti: `v*` etiketi push edilince paket derlenip yükleniyor.
   Kimlik doğrulama token değil, GitHub'ın imzaladığı kısa ömürlü OIDC kimliği

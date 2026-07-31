@@ -79,6 +79,7 @@ class Camera:
         self._queue: queue.Queue[np.ndarray] = queue.Queue(maxsize=1)
         self._stop_event = threading.Event()
         self._window_open = False
+        self._last_key = -1
         self._frames_read = 0
         self._frames_dropped = 0
         # Tüketilen karelerin zaman damgaları; ölçülen hız buradan çıkıyor.
@@ -202,7 +203,10 @@ class Camera:
             self._capture.release()
             self._capture = None
         if self._window_open:
-            cv2.destroyWindow(self.window_name)
+            try:
+                cv2.destroyWindow(self.window_name)
+            except cv2.error:  # pragma: no cover - headless build, or already gone
+                pass
             self._window_open = False
 
     def __enter__(self) -> Camera:
@@ -314,15 +318,36 @@ class Camera:
 
         Returns ``False`` once the user asks to quit (``q``, ``ESC``, or the
         window's close button), which also ends an active :meth:`stream`.
+
+        Whatever key was pressed stays available through :attr:`key` and
+        :meth:`pressed`, so a demo can react to it::
+
+            cam.show(frame, detections)
+            if cam.pressed("1"):
+                cam.theme = "neon"
         """
         self.annotate(frame, detections, labels=labels, stats=stats)
         cv2.imshow(self.window_name, frame)
         self._window_open = True
 
-        if (cv2.waitKey(wait) & 0xFF) in QUIT_KEYS or self._window_closed():
+        pressed = cv2.waitKey(wait) & 0xFF
+        # waitKey returns -1 when nothing was pressed, which masks to 255.
+        self._last_key = -1 if pressed == 255 else pressed
+
+        if self._last_key in QUIT_KEYS or self._window_closed():
             self._stop_event.set()
             return False
         return True
+
+    @property
+    def key(self) -> int:
+        """Key code from the last :meth:`show`, or ``-1`` when nothing was pressed."""
+        return self._last_key
+
+    def pressed(self, key: str | int) -> bool:
+        """True when the last :meth:`show` saw ``key`` -- ``cam.pressed("1")``."""
+        code = ord(key) if isinstance(key, str) else int(key)
+        return self._last_key == code
 
     def _window_closed(self) -> bool:
         try:
