@@ -23,9 +23,6 @@ Ayarları oynat, hazır Python kodunu kopyala; sayfa tamamen tarayıcıda çalı
 
 ![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)
 
-> **Durum:** kamera döngüsü, dört tema, sekiz çerçeve biçimi ve model bağlama hazır.
-> PyPI'da: [cvflair](https://pypi.org/project/cvflair/).
-
 ## Kurulum
 
 Python 3.10 veya üzeri gerekir.
@@ -102,8 +99,8 @@ for frame, detections in cam.stream(model=detect):
     cam.show(frame, detections)
 ```
 
-Elde `supervision` varsa onun `Detections` nesnesi de doğrudan verilebilir; cvflair
-alan adlarına göre okur, dönüştürme gerekmez.
+Çizim alan adlarına göre okuduğu için başka kütüphanelerin tespit nesneleri de
+(örneğin `supervision.Detections`) dönüştürülmeden verilebilir.
 
 Çıkarım bu döngüde çalışır, okuma thread'inde değil: bir kare işlenirken okuyucu
 kuyruktaki kareyi tazelemeye devam eder, dolayısıyla bir sonraki tur birikmiş
@@ -163,8 +160,6 @@ theme = Theme(
     thickness=3,
 )
 ```
-
-Yol haritasındaki `hud` teması (FPS/skor paneli) Faz 3'te gelecek.
 
 Özel bir tema, `Theme` doğrudan kurulup `Camera`'ya verilerek tanımlanır:
 
@@ -245,15 +240,6 @@ Dokümantasyon görselleri de kamerasız üretilir:
 python tools/make_demo_gif.py    # docs/demo.gif
 python examples/theme_preview.py # examples/output/theme-*.png
 ```
-
-## Yol haritası
-
-| Faz | İçerik | Durum |
-|---|---|---|
-| Faz 1 | Kamera döngüsü, `minimal`/`neon`/`pastel` temaları, README, demo GIF, testler | tamam |
-| Faz 2 | Model bağlama, PyPI paketi, [tema playground](https://kbycode.github.io/cvflair/) | tamam |
-| Faz 2 | Türkçe dokümantasyon sitesi, `cyberpunk`/`hud` temaları | sırada |
-| Faz 3 | GitHub Actions (lint + test), issue şablonları, örnek galerisi | planlandı |
 
 ## Lisans
 
