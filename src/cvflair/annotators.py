@@ -30,6 +30,7 @@ __all__ = [
     "CrosshairAnnotator",
     "TargetBoxAnnotator",
     "LabelAnnotator",
+    "ConfidenceBarAnnotator",
     "HudAnnotator",
     "EdgeAnnotator",
     "VertexAnnotator",
@@ -140,6 +141,16 @@ def _int_box(xyxy: np.ndarray) -> tuple[int, int, int, int] | None:
         return None
     clipped = np.clip(xyxy, -COORDINATE_LIMIT, COORDINATE_LIMIT)
     return (int(clipped[0]), int(clipped[1]), int(clipped[2]), int(clipped[3]))
+
+
+def _overlaps(first: tuple[int, int, int, int], second: tuple[int, int, int, int]) -> bool:
+    """İki plaka dikdörtgeni kesişiyor mu."""
+    return not (
+        first[2] <= second[0]
+        or second[2] <= first[0]
+        or first[3] <= second[1]
+        or second[3] <= first[1]
+    )
 
 
 def _corner_arm(width: int, height: int, corner_length: int) -> int:
@@ -379,9 +390,12 @@ class LabelAnnotator:
         text_padding: int = 6,
         border_radius: int = 0,
         color_lookup: ColorLookup = ColorLookup.CLASS,
+        avoid_overlap: bool = True,
     ) -> None:
         self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
         self.text_color = resolve_palette(text_color).colors[0]
+        #: Plakalar birbirini ezmesin diye boş bir yere kaydırılır.
+        self.avoid_overlap = bool(avoid_overlap)
         self.text_scale = float(text_scale)
         self.text_thickness = max(1, int(text_thickness))
         self.text_padding = max(0, int(text_padding))
@@ -392,34 +406,33 @@ class LabelAnnotator:
         self, scene: np.ndarray, detections: Any, labels: Any = None
     ) -> np.ndarray:
         texts = self._texts(detections, labels)
-        height_limit = scene.shape[0]
+        frame_height, frame_width = scene.shape[:2]
+        placed: list[tuple[int, int, int, int]] = []
 
         for index in range(len(detections)):
             box = _int_box(detections.xyxy[index])
             if box is None:
                 continue
-            x1, y1 = box[0], box[1]
             colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
             text = texts[index]
 
             (text_width, text_height), _ = cv2.getTextSize(
                 text, FONT, self.text_scale, self.text_thickness
             )
-            plate_width = text_width + self.text_padding * 2
-            plate_height = text_height + self.text_padding * 2
+            size = (text_width + self.text_padding * 2, text_height + self.text_padding * 2)
+            plate, moved = self._place(box, size, placed, frame_width, frame_height)
+            placed.append(plate)
 
-            top = int(y1) - plate_height
-            if top < 0:  # no room above the box, so the plate sits inside it
-                top = int(y1)
-            bottom = min(top + plate_height, height_limit)
-            left = int(x1)
+            if moved:
+                # Plaka kutusundan uzaklaştıysa hangi kutuya ait olduğu
+                # anlaşılmıyor; ince bir işaretçi çizgisi bağlıyor.
+                cv2.line(scene, (plate[0], plate[3]), (box[0], box[1]), colour, 1, cv2.LINE_AA)
 
-            plate = (left, top, left + plate_width, bottom)
             _rounded_fill(scene, plate, self.border_radius, colour)
             cv2.putText(
                 scene,
                 text,
-                (left + self.text_padding, bottom - self.text_padding),
+                (plate[0] + self.text_padding, plate[3] - self.text_padding),
                 FONT,
                 self.text_scale,
                 self.text_color.as_bgr(),
@@ -427,6 +440,46 @@ class LabelAnnotator:
                 cv2.LINE_AA,
             )
         return scene
+
+    def _place(
+        self,
+        box: tuple[int, int, int, int],
+        size: tuple[int, int],
+        placed: list[tuple[int, int, int, int]],
+        frame_width: int,
+        frame_height: int,
+    ) -> tuple[tuple[int, int, int, int], bool]:
+        """
+        Plaka için bir yer seçer.
+
+        Varsayılan yer kutunun üstü. ``avoid_overlap`` açıkken daha önce
+        yerleştirilmiş plakalarla çakışıyorsa sırayla başka yerler denenir;
+        hiçbiri boş değilse varsayılana dönülür ve üst üste binmeye izin verilir.
+        """
+        x1, y1, x2, y2 = box
+        width, height = size
+        candidates = [(x1, y1 - height)]
+        if self.avoid_overlap:
+            candidates += [
+                (x1, y1),                       # kutunun içinde, üstte
+                (x1, y2),                       # kutunun altında
+                (x2 - width, y1 - height),      # üstte, sağa hizalı
+                (x1, y1 - 2 * height - 3),      # bir kat yukarı
+                (x1, y2 + height + 3),          # bir kat aşağı
+                (x1 - width - 3, y1),           # solda
+                (x2 + 3, y1),                   # sağda
+            ]
+
+        def fit(left: float, top: float) -> tuple[int, int, int, int]:
+            x = max(0, min(int(left), frame_width - width))
+            y = max(0, min(int(top), frame_height - height))
+            return (x, y, x + width, y + height)
+
+        options = [fit(left, top) for left, top in candidates]
+        for order, plate in enumerate(options):
+            if not any(_overlaps(plate, other) for other in placed):
+                return plate, order > 0
+        return options[0], False  # her yer dolu: varsayılana dön, üst üste binsin
 
     def _texts(self, detections: Any, labels: Any) -> list[str]:
         count = len(detections)
@@ -449,6 +502,57 @@ class LabelAnnotator:
 
     def __repr__(self) -> str:
         return f"LabelAnnotator(text_scale={self.text_scale})"
+
+
+class ConfidenceBarAnnotator:
+    """
+    A thin bar under each box, filled in proportion to the detection's score.
+
+    Detections without ``confidence`` are skipped -- there is nothing to show.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        height: int = 4,
+        gap: int = 3,
+        background: Any = "#101418",
+        color_lookup: ColorLookup = ColorLookup.CLASS,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.height = max(1, int(height))
+        self.gap = max(0, int(gap))
+        self.background = resolve_palette(background).colors[0]
+        self.color_lookup = color_lookup
+
+    def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
+        confidence = getattr(detections, "confidence", None)
+        if confidence is None:
+            return scene
+
+        for index in range(len(detections)):
+            box = _int_box(detections.xyxy[index])
+            if box is None:
+                continue
+            score = float(confidence[index])
+            if not np.isfinite(score):
+                continue
+
+            x1, _, x2, y2 = box
+            width = x2 - x1
+            if width <= 0:
+                continue
+            top = y2 + self.gap
+            bottom = top + self.height
+
+            cv2.rectangle(scene, (x1, top), (x2, bottom), self.background.as_bgr(), -1)
+            filled = x1 + int(width * min(max(score, 0.0), 1.0))
+            colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
+            cv2.rectangle(scene, (x1, top), (filled, bottom), colour, -1)
+        return scene
+
+    def __repr__(self) -> str:
+        return f"ConfidenceBarAnnotator(height={self.height})"
 
 
 # -- key points -------------------------------------------------------------

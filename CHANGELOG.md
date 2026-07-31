@@ -2,6 +2,17 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **Etiket çakışması çözülüyor.** Kutular üst üste bindiğinde plakalar birbirini
+  eziyordu; artık boş bir yere kaydırılıyor (kutu içi, altı, yanı, bir kat yukarı)
+  ve uzaklaşan plakaya kutuya giden ince bir işaretçi çizgisi çekiliyor. Hiçbir
+  yer boş değilse varsayılana dönülüyor. `Theme(avoid_label_overlap=False)` ile
+  kapatılabilir.
+- **Güven barı:** `Theme(confidence_bar=True)` kutunun altına skorla orantılı ince
+  bir çubuk çizer. Güveni olmayan tespitlerde çizilmez.
+
 ## 0.9.0
 
 ### Eklendi

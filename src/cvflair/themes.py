@@ -21,6 +21,7 @@ from .annotators import (
     BoxAnnotator,
     BoxCornerAnnotator,
     BracketBoxAnnotator,
+    ConfidenceBarAnnotator,
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
@@ -85,6 +86,12 @@ class Theme:
     glow_thickness: int = 5
     glow_dim: float = 0.45
     labels: bool = True
+    #: Plakalar birbirini ezmesin diye boş bir yere kaydırılır; uzaklaşırsa
+    #: kutuya ince bir işaretçi çizgisi çekilir.
+    avoid_label_overlap: bool = True
+    #: Kutunun altında güven skorunu gösteren ince bar.
+    confidence_bar: bool = False
+    confidence_bar_height: int = 4
     text_color: Any = field(default_factory=lambda: Color.BLACK)
     text_scale: float = 0.5
     text_thickness: int = 1
@@ -153,8 +160,18 @@ class Theme:
                 text_padding=self.text_padding,
                 border_radius=self.label_radius,
                 color_lookup=self.color_lookup,
+                avoid_overlap=self.avoid_label_overlap,
             )
             if self.labels
+            else None
+        )
+        self._confidence_bar_annotator = (
+            ConfidenceBarAnnotator(
+                color=self.palette,
+                height=self.confidence_bar_height,
+                color_lookup=self.color_lookup,
+            )
+            if self.confidence_bar
             else None
         )
         self._edge_annotator = EdgeAnnotator(
@@ -265,6 +282,8 @@ class Theme:
             if self._glow_annotator is not None:
                 self._glow_annotator.annotate(scene, detections)
             self._box_annotator.annotate(scene, detections)
+            if self._confidence_bar_annotator is not None:
+                self._confidence_bar_annotator.annotate(scene, detections)
             if self._label_annotator is not None:
                 self._label_annotator.annotate(scene, detections, labels=labels)
 
