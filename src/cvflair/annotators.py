@@ -32,6 +32,7 @@ __all__ = [
     "LabelAnnotator",
     "ConfidenceBarAnnotator",
     "BlurAnnotator",
+    "MaskAnnotator",
     "ZoneAnnotator",
     "HudAnnotator",
     "EdgeAnnotator",
@@ -606,6 +607,61 @@ class BlurAnnotator:
 
     def __repr__(self) -> str:
         return f"BlurAnnotator(mode={self.mode!r}, strength={self.strength})"
+
+
+class MaskAnnotator:
+    """
+    Segmentation masks: a tinted fill, an outline along the mask edge, or both.
+
+    Nothing here computes a mask -- the model produces it and ``Detections.mask``
+    carries it. Masks are drawn before the boxes so the outline stays crisp.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        opacity: float = 0.4,
+        outline: int = 2,
+        color_lookup: ColorLookup = ColorLookup.CLASS,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.opacity = min(max(float(opacity), 0.0), 1.0)
+        #: Outline weight along the mask edge; 0 draws only the tint.
+        self.outline = max(0, int(outline))
+        self.color_lookup = color_lookup
+
+    def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
+        masks = getattr(detections, "mask", None)
+        if masks is None or len(masks) == 0:
+            return scene
+
+        height, width = scene.shape[:2]
+        usable = []
+        for index in range(len(detections)):
+            mask = np.asarray(masks[index], dtype=bool)
+            if mask.shape != (height, width) or not mask.any():
+                continue  # başka boyuttaki maske çizilemez, sessizce atlanır
+            colour = resolve_color(self.color, detections, index, self.color_lookup).as_bgr()
+            usable.append((mask, colour))
+
+        if self.opacity > 0 and usable:
+            # Tek harmanlama: maske başına ayrı geçiş kareyi birden çok kez tarardı.
+            tinted = scene.copy()
+            for mask, colour in usable:
+                tinted[mask] = colour
+            cv2.addWeighted(tinted, self.opacity, scene, 1 - self.opacity, 0, scene)
+
+        # Kontur harmanlamadan sonra: çizgi tam opaklıkta kalsın.
+        if self.outline:
+            for mask, colour in usable:
+                edges, _ = cv2.findContours(
+                    mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+                )
+                cv2.drawContours(scene, edges, -1, colour, self.outline, cv2.LINE_AA)
+        return scene
+
+    def __repr__(self) -> str:
+        return f"MaskAnnotator(opacity={self.opacity}, outline={self.outline})"
 
 
 class ZoneAnnotator:

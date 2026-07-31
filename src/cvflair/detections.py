@@ -34,6 +34,9 @@ class Detections:
     #: Class names, one per box. ``supervision`` keeps these in ``data``; both
     #: are read by :func:`detection_names`.
     names: np.ndarray | None = None
+    #: Segmentation masks, ``(N, H, W)`` boolean -- one full-frame mask per box.
+    #: Only carried and drawn; nothing here computes them.
+    mask: np.ndarray | None = None
     data: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -48,8 +51,14 @@ class Detections:
             self.confidence = np.asarray(self.confidence, dtype=np.float32).reshape(-1)
         if self.names is not None:
             self.names = np.asarray(self.names, dtype=object).reshape(-1)
+        if self.mask is not None:
+            self.mask = np.asarray(self.mask, dtype=bool)
+            if self.mask.ndim == 2:  # a single mask was handed over
+                self.mask = self.mask[None, ...]
+            if self.mask.ndim != 3:
+                raise ValueError(f"mask must be shaped (N, H, W), got {self.mask.shape}.")
 
-        for name in ("class_id", "confidence", "tracker_id", "names"):
+        for name in ("class_id", "confidence", "tracker_id", "names", "mask"):
             value = getattr(self, name)
             if value is not None and len(value) != count:
                 raise ValueError(

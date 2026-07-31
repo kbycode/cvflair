@@ -29,6 +29,7 @@ from .annotators import (
     EdgeAnnotator,
     HudAnnotator,
     LabelAnnotator,
+    MaskAnnotator,
     RoundBoxAnnotator,
     TargetBoxAnnotator,
     VertexAnnotator,
@@ -97,6 +98,10 @@ class Theme:
     #: Kutu içini gizleme: None, "blur" ya da "pixelate". Çerçeveden önce uygulanır.
     hide: str | None = None
     hide_strength: int = 15
+    #: Segmentasyon maskesi çizimi; tespitte maske yoksa yok sayılır.
+    masks: bool = True
+    mask_opacity: float = 0.4
+    mask_outline: int = 2
     text_color: Any = field(default_factory=lambda: Color.BLACK)
     text_scale: float = 0.5
     text_thickness: int = 1
@@ -173,6 +178,16 @@ class Theme:
         self._blur_annotator = (
             BlurAnnotator(mode=self.hide, strength=self.hide_strength)
             if self.hide is not None
+            else None
+        )
+        self._mask_annotator = (
+            MaskAnnotator(
+                color=self.palette,
+                opacity=self.mask_opacity,
+                outline=self.mask_outline,
+                color_lookup=self.color_lookup,
+            )
+            if self.masks
             else None
         )
         self._zone_annotator = ZoneAnnotator(color=self.palette, thickness=self.thickness)
@@ -293,6 +308,8 @@ class Theme:
             # Gizleme en altta: çerçeve ve etiket bulanıklığın üstünde kalmalı.
             if self._blur_annotator is not None:
                 self._blur_annotator.annotate(scene, detections)
+            if self._mask_annotator is not None:
+                self._mask_annotator.annotate(scene, detections)
             if self._glow_annotator is not None:
                 self._glow_annotator.annotate(scene, detections)
             self._box_annotator.annotate(scene, detections)
