@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.8.0
 
 ### Eklendi
 - `Camera.key` ve `Camera.pressed(tuş)` — `show()` artık basılan tuşu yutmuyor,
