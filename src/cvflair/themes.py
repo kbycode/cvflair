@@ -24,12 +24,15 @@ from .annotators import (
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    EdgeAnnotator,
     HudAnnotator,
     LabelAnnotator,
     RoundBoxAnnotator,
     TargetBoxAnnotator,
+    VertexAnnotator,
 )
 from .colors import Color, ColorLookup, ColorPalette, resolve_palette
+from .keypoints import Skeleton, resolve_skeleton
 
 __all__ = ["Theme", "get_theme", "available_themes", "BoxStyle", "BOX_STYLES"]
 
@@ -93,6 +96,11 @@ class Theme:
     hud: bool = False
     hud_position: str = "top_left"
     hud_opacity: float = 0.6
+    #: Skeleton drawing: bone weight, joint size, and the confidence a point
+    #: needs before it is drawn at all.
+    pose_thickness: int = 2
+    pose_radius: int = 3
+    pose_confidence: float = 0.3
 
     def __post_init__(self) -> None:
         if self.box_style not in BOX_STYLES:
@@ -147,6 +155,28 @@ class Theme:
                 color_lookup=self.color_lookup,
             )
             if self.labels
+            else None
+        )
+        self._edge_annotator = EdgeAnnotator(
+            color=self.palette,
+            color_lookup=self.color_lookup,
+            thickness=self.pose_thickness,
+            min_confidence=self.pose_confidence,
+        )
+        self._vertex_annotator = VertexAnnotator(
+            color=self.accent_palette if self.accent_palette is not None else self.palette,
+            color_lookup=self.color_lookup,
+            radius=self.pose_radius,
+            min_confidence=self.pose_confidence,
+        )
+        self._glow_edge_annotator = (
+            EdgeAnnotator(
+                color=self.palette.dim(self.glow_dim),
+                color_lookup=self.color_lookup,
+                thickness=self.pose_thickness + self.glow_thickness,
+                min_confidence=self.pose_confidence,
+            )
+            if self.glow
             else None
         )
         self._hud_annotator = (
@@ -240,6 +270,29 @@ class Theme:
 
         if self._hud_annotator is not None and stats:
             self._hud_annotator.annotate(scene, stats)
+        return scene
+
+    def annotate_keypoints(
+        self,
+        scene: np.ndarray,
+        keypoints: Any,
+        skeleton: Skeleton | str = "hand",
+    ) -> np.ndarray:
+        """
+        Draw skeletons onto ``scene`` in place and return the same array.
+
+        ``skeleton`` is a name (``"hand"``, ``"pose"``) or a list of index pairs.
+        Bones take the palette colour, joints take the accent when the theme has
+        one, and ``glow`` puts a dimmed thicker pass behind the bones.
+        """
+        if len(keypoints) == 0:
+            return scene
+        wiring = resolve_skeleton(skeleton)
+
+        if self._glow_edge_annotator is not None:
+            self._glow_edge_annotator.annotate(scene, keypoints, wiring)
+        self._edge_annotator.annotate(scene, keypoints, wiring)
+        self._vertex_annotator.annotate(scene, keypoints)
         return scene
 
 

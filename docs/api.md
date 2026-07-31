@@ -8,8 +8,8 @@
 | `cam.start()` / `cam.close()` | Cihazı açar ve okuma thread'ini başlatır / her şeyi bırakır |
 | `cam.stream(timeout, model=None)` | Kareleri üretir; model verilirse `(kare, tespitler)` çifti. İlk kullanımda `start()`, bitince `close()` eder |
 | `cam.read(timeout)` | En güncel tek kareyi döndürür, kaynak bittiyse `None` |
-| `cam.show(frame, detections, labels, stats)` | Temayı uygular, pencerede gösterir; çıkış istendiğinde `False` döner |
-| `cam.annotate(frame, detections, labels, stats)` | Sadece çizer, pencere açmaz |
+| `cam.show(frame, detections, labels, stats, keypoints, skeleton)` | Temayı uygular, pencerede gösterir; çıkış istendiğinde `False` döner |
+| `cam.annotate(frame, detections, labels, stats, keypoints, skeleton)` | Sadece çizer, pencere açmaz |
 | `cam.theme` | Okunur/yazılır; `cam.theme = "minimal"` çalışır |
 | `cam.key` / `cam.pressed(tuş)` | Son `show()` sırasında basılan tuş; basılmadıysa `-1` |
 | `cam.measured_fps` | Son 30 karenin ortalamasıyla ölçülen gerçek kare hızı |
@@ -24,6 +24,7 @@
 |---|---|
 | `Theme(...)` | Bütün çizim ayarları — bkz. [temalar](temalar.md) |
 | `theme.annotate(scene, detections, labels, stats)` | Kareye yerinde çizer, aynı diziyi döndürür |
+| `theme.annotate_keypoints(scene, keypoints, skeleton)` | İskelet çizer — bkz. [noktalar](noktalar.md) |
 | `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
 | `BOX_STYLES` / `HUD_POSITIONS` | Geçerli değerler |
 | `Color`, `ColorPalette`, `ColorLookup` | Renk altyapısı; hex dizgeleri her yerde kabul edilir |
@@ -34,6 +35,8 @@
 | Üye | Ne yapar |
 |---|---|
 | `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı — bkz. [modeller](modeller.md) |
+| `KeyPoints(xy, confidence, class_id)` | Nokta taşıyıcısı; `from_normalized` yardımcısıyla |
+| `HAND_21` / `POSE_17` / `SKELETONS` | Hazır iskelet topolojileri |
 | `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir |
 | `load_ultralytics(weights, **kwargs)` | Ağırlık dosyasını yükler; extra eksikse açıklayıcı hata verir |
 | `resolve_detector(model)` | Ağırlık yolu / model / çağrılabilir → detektör; `stream()` bunu kullanır |

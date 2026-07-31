@@ -16,6 +16,7 @@ python examples/quickstart.py
 | [demo_fake_detections.py](demo_fake_detections.py) | Modelsiz canlı demo: hareketli sahte kutular, 3 saniyede bir tema değişimi | gerekli | — |
 | [motion_detection.py](motion_detection.py) | **Gerçek tespit, sinir ağı yok:** arka plan çıkarımıyla hareket eden bölgeler | gerekli | — |
 | [theme_switcher.py](theme_switcher.py) | Çalışırken tuşla tema değiştirme (`cam.pressed`) | gerekli | — |
+| [hand_skeleton.py](hand_skeleton.py) | 21 noktalı el iskeleti, açılıp kapanan parmaklarla | gerekli | — |
 | [hud_stats.py](hud_stats.py) | `hud` temasının sayaç panelini kendi verinle beslemek | gerekli | — |
 | [yolo_quickstart.py](yolo_quickstart.py) | YOLO ağırlığıyla akış; etiketler sınıf adlarından | gerekli | `pip install "cvflair[yolo]"` |
 | [video_file.py](video_file.py) | Video dosyasını işleyip işaretlenmiş kopyasını yazmak (`drop_frames=False`) | hayır | video dosyası |

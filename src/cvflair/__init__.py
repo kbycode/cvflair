@@ -24,14 +24,17 @@ from .annotators import (
     CrosshairAnnotator,
     DashedBoxAnnotator,
     DashedCornerAnnotator,
+    EdgeAnnotator,
     HudAnnotator,
     LabelAnnotator,
     RoundBoxAnnotator,
     TargetBoxAnnotator,
+    VertexAnnotator,
 )
 from .camera import Camera, CameraError
 from .colors import Color, ColorLookup, ColorPalette
 from .detections import Detections
+from .keypoints import HAND_21, POSE_17, SKELETONS, KeyPoints, Skeleton
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 
@@ -52,6 +55,13 @@ __all__ = [
     "DashedBoxAnnotator",
     "DashedCornerAnnotator",
     "Detections",
+    "VertexAnnotator",
+    "Skeleton",
+    "SKELETONS",
+    "POSE_17",
+    "KeyPoints",
+    "HAND_21",
+    "EdgeAnnotator",
     "Detector",
     "HudAnnotator",
     "LabelAnnotator",

@@ -31,6 +31,8 @@ __all__ = [
     "TargetBoxAnnotator",
     "LabelAnnotator",
     "HudAnnotator",
+    "EdgeAnnotator",
+    "VertexAnnotator",
     "HUD_POSITIONS",
 ]
 
@@ -447,6 +449,96 @@ class LabelAnnotator:
 
     def __repr__(self) -> str:
         return f"LabelAnnotator(text_scale={self.text_scale})"
+
+
+# -- key points -------------------------------------------------------------
+
+
+class _SkeletonAnnotator:
+    """
+    Shared plumbing for the joint family: one colour per skeleton, points that
+    are not finite or fall below ``min_confidence`` are skipped.
+
+    Colour lookup follows the skeleton index, or ``class_id`` when the caller
+    supplies one -- two hands in different colours, or every person in the same.
+    """
+
+    def __init__(
+        self,
+        color: Any = None,
+        color_lookup: ColorLookup = ColorLookup.CLASS,
+        min_confidence: float = 0.3,
+    ) -> None:
+        self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
+        self.color_lookup = color_lookup
+        self.min_confidence = float(min_confidence)
+
+    def _colour(self, keypoints: Any, index: int) -> tuple[int, int, int]:
+        class_id = getattr(keypoints, "class_id", None)
+        position = index if class_id is None or self.color_lookup is ColorLookup.INDEX else (
+            int(class_id[index])
+        )
+        return self.color.by_index(position).as_bgr()
+
+    def _points(self, keypoints: Any, index: int) -> list[tuple[int, int] | None]:
+        """Drawable points for one skeleton; ``None`` where it cannot be drawn."""
+        confidence = getattr(keypoints, "confidence", None)
+        drawable: list[tuple[int, int] | None] = []
+        for point_index, point in enumerate(keypoints.xy[index]):
+            weak = (
+                confidence is not None
+                and float(confidence[index][point_index]) < self.min_confidence
+            )
+            if weak or not np.all(np.isfinite(point)):
+                drawable.append(None)
+                continue
+            clipped = np.clip(point, -COORDINATE_LIMIT, COORDINATE_LIMIT)
+            drawable.append((int(clipped[0]), int(clipped[1])))
+        return drawable
+
+
+class EdgeAnnotator(_SkeletonAnnotator):
+    """The bones: a line for every connected pair the skeleton lists."""
+
+    def __init__(self, *args: Any, thickness: int = 2, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.thickness = max(1, int(thickness))
+
+    def annotate(self, scene: np.ndarray, keypoints: Any, skeleton: Any) -> np.ndarray:
+        for index in range(len(keypoints)):
+            points = self._points(keypoints, index)
+            colour = self._colour(keypoints, index)
+            for first, second in skeleton:
+                if first >= len(points) or second >= len(points):
+                    continue  # skeleton describes more points than the model gave
+                start, end = points[first], points[second]
+                if start is None or end is None:
+                    continue
+                cv2.line(scene, start, end, colour, self.thickness, cv2.LINE_AA)
+        return scene
+
+    def __repr__(self) -> str:
+        return f"EdgeAnnotator(thickness={self.thickness})"
+
+
+class VertexAnnotator(_SkeletonAnnotator):
+    """The joints: a filled dot on every drawable point."""
+
+    def __init__(self, *args: Any, radius: int = 3, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.radius = max(1, int(radius))
+
+    def annotate(self, scene: np.ndarray, keypoints: Any, skeleton: Any = None) -> np.ndarray:
+        for index in range(len(keypoints)):
+            colour = self._colour(keypoints, index)
+            for point in self._points(keypoints, index):
+                if point is None:
+                    continue
+                cv2.circle(scene, point, self.radius, colour, -1, cv2.LINE_AA)
+        return scene
+
+    def __repr__(self) -> str:
+        return f"VertexAnnotator(radius={self.radius})"
 
 
 # -- heads-up display -------------------------------------------------------

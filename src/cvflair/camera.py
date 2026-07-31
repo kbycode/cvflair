@@ -20,6 +20,7 @@ import cv2
 import numpy as np
 
 from .detections import Detections
+from .keypoints import KeyPoints, Skeleton
 from .models import ModelLike, resolve_detector
 from .themes import Theme, get_theme
 
@@ -277,19 +278,25 @@ class Camera:
         detections: Detections | None = None,
         labels: Sequence[str] | None = None,
         stats: Mapping[str, Any] | None = None,
+        keypoints: KeyPoints | None = None,
+        skeleton: Skeleton | str = "hand",
     ) -> np.ndarray:
         """
         Apply the active theme in place. Useful when not using :meth:`show`.
 
         Themes with a HUD get frame rate and detection count for free; ``stats``
-        adds to that panel and wins on a repeated key.
+        adds to that panel and wins on a repeated key. ``keypoints`` draws a
+        skeleton on top of the boxes -- see :mod:`cvflair.keypoints`.
         """
-        return self._theme.annotate(
+        self._theme.annotate(
             frame,
             detections if detections is not None else Detections.empty(),
             labels=labels,
             stats=self._hud_stats(detections, stats),
         )
+        if keypoints is not None:
+            self._theme.annotate_keypoints(frame, keypoints, skeleton)
+        return frame
 
     def _hud_stats(
         self, detections: Detections | None, extra: Mapping[str, Any] | None
@@ -311,6 +318,8 @@ class Camera:
         labels: Sequence[str] | None = None,
         *,
         stats: Mapping[str, Any] | None = None,
+        keypoints: KeyPoints | None = None,
+        skeleton: Skeleton | str = "hand",
         wait: int = 1,
     ) -> bool:
         """
@@ -326,7 +335,10 @@ class Camera:
             if cam.pressed("1"):
                 cam.theme = "neon"
         """
-        self.annotate(frame, detections, labels=labels, stats=stats)
+        self.annotate(
+            frame, detections, labels=labels, stats=stats,
+            keypoints=keypoints, skeleton=skeleton,
+        )
         cv2.imshow(self.window_name, frame)
         self._window_open = True
 

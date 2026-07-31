@@ -17,7 +17,7 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 *Aynı tespitler, dört tema. `tools/make_demo_gif.py` ile üretildi: `docs/city.png`
 üzerine çizilen kutular. Başka bir görsel için `--background <yol>`.*
 
-**Sekiz çerçeve biçimi, beş hazır tema — hepsi tek `Theme(...)` satırıyla.**
+**Sekiz çerçeve biçimi, beş hazır tema, el ve poz iskeleti — hepsi tek `Theme(...)` satırıyla.**
 Hiçbirini kurmadan denemek için: **[tema playground →](https://kbycode.github.io/cvflair/)**
 Ayarları oynat, hazır Python kodunu kopyala; sayfa tamamen tarayıcıda çalışır.
 
@@ -63,14 +63,24 @@ for frame, detections in cam.stream(model="yolov8n.pt"):
 `model` yerine `Detections` döndüren kendi fonksiyonunu da verebilirsin —
 kütüphaneyi model-agnostik yapan yer orası.
 
+Kutuların yanında **el ve poz iskeleti** de çizilir; noktalar yine senin
+modelinden gelir:
+
+```python
+from cvflair import HAND_21, KeyPoints
+
+cam.show(frame, keypoints=KeyPoints(xy=el_noktalari), skeleton=HAND_21)
+```
+
 ## Belgeler
 
 | | |
 |---|---|
 | [Temalar ve çerçeve biçimleri](https://github.com/kbycode/cvflair/blob/main/docs/temalar.md) | Beş tema, sekiz biçim, ikinci renk, renk paleti, sayaç paneli, kendi temanı yazmak |
+| [Nokta ve iskelet çizimi](https://github.com/kbycode/cvflair/blob/main/docs/noktalar.md) | El ve poz iskeletleri, `KeyPoints`, hazır topolojiler, kendi iskeletin |
 | [Model bağlama ve tespitler](https://github.com/kbycode/cvflair/blob/main/docs/modeller.md) | `stream(model=...)`, kendi detektörün, `Detections`, Ultralytics ayarları, video dosyaları |
 | [API özeti ve iç işleyiş](https://github.com/kbycode/cvflair/blob/main/docs/api.md) | Bütün genel arayüz, thread ve kuyruk davranışı, ölçülmüş performans |
-| [Örnek galerisi](https://github.com/kbycode/cvflair/blob/main/examples/README.md) | Dokuz çalışan örnek; hangisi kamera istiyor, hangisi istemiyor |
+| [Örnek galerisi](https://github.com/kbycode/cvflair/blob/main/examples/README.md) | On çalışan örnek; hangisi kamera istiyor, hangisi istemiyor |
 | [Katkı rehberi](https://github.com/kbycode/cvflair/blob/main/CONTRIBUTING.md) | Kurulum, kapsam sınırları, yeni tema ekleme adımları |
 
 Kameran yoksa bile çalışan üç örnek var:

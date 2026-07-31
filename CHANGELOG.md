@@ -2,6 +2,22 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **Nokta ve iskelet çizimi.** `KeyPoints` taşıyıcısı, `EdgeAnnotator` (kemikler)
+  ve `VertexAnnotator` (eklemler); hazır topolojiler `HAND_21` (MediaPipe Hands
+  sırası) ve `POSE_17` (COCO / YOLO-pose). Kendi kenar listeni de verebilirsin.
+  Poz tahmini yapılmıyor — noktalar kullanıcının modelinden geliyor.
+- `Theme.annotate_keypoints(...)` ve `Camera.show(..., keypoints=..., skeleton=...)`.
+  Kemikler paletin rengini, eklemler vurgu rengini alıyor; `glow` kemiklerin
+  arkasına koyu geçiş çiziyor. Yeni tema alanları: `pose_thickness`,
+  `pose_radius`, `pose_confidence`.
+- `KeyPoints.from_normalized(...)` — MediaPipe gibi 0-1 aralığında veren
+  kütüphaneler için ölçekleme.
+- [`examples/hand_skeleton.py`](examples/hand_skeleton.py) ve
+  [belgesi](docs/noktalar.md).
+
 ## 0.8.1
 
 ### Düzeltildi
