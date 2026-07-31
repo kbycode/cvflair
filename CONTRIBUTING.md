@@ -51,6 +51,19 @@ Temayı önce tarayıcıda denemek en hızlısı:
 
 ## Belgeler ve görseller
 
+Kullanıcı belgeleri `docs/` altında düz markdown; site üreteci yok, GitHub kendisi
+render ediyor. README vitrin olarak kalıyor, ayrıntı oraya yazılmıyor:
+
+| Dosya | İçerik |
+|---|---|
+| `docs/temalar.md` | Temalar, çerçeve biçimleri, palet, sayaç paneli |
+| `docs/modeller.md` | Model bağlama, `Detections`, video dosyaları |
+| `docs/api.md` | Genel arayüz, iç işleyiş, performans tablosu |
+
+README'deki bağlantılar mutlak GitHub adresi olmalı — aynı dosya PyPI sayfası
+olarak da kullanılıyor ve orada göreli yollar kırılıyor.
+
+
 `docs/` altındaki görseller elle çizilmiyor, üretiliyor:
 
 ```bash

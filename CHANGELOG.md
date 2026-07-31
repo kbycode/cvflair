@@ -2,6 +2,15 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Belgeler
+- README vitrin haline getirildi (304 → 119 satır); ayrıntı `docs/` altında üç
+  markdown dosyasına bölündü: [temalar](docs/temalar.md), [modeller](docs/modeller.md),
+  [api](docs/api.md). Site üreteci eklenmedi, GitHub kendisi render ediyor.
+- README'deki bütün bağlantılar mutlak GitHub adresine çevrildi; göreli yollar
+  aynı dosya PyPI sayfası olarak kullanıldığında kırılıyordu.
+
 ## 0.8.0
 
 ### Eklendi
