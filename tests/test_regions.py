@@ -82,7 +82,8 @@ def test_theme_hides_under_the_box_not_over_it():
     Theme(hide="blur", palette=["#FF0000"], thickness=3).annotate(frame, single())
 
     red = np.array([0, 0, 255], dtype=np.uint8)
-    assert int(np.count_nonzero(np.all(frame == red, axis=2))) > 0, "çerçeve bulanıklığın altında kalmış"
+    drawn = int(np.count_nonzero(np.all(frame == red, axis=2)))
+    assert drawn > 0, "çerçeve bulanıklığın altında kalmış"
 
 
 def test_hiding_is_off_by_default():
