@@ -2,6 +2,19 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- `Camera(drop_frames=False)` — okuyucu tüketiciyi bekler. Canlı kamerada eski kareyi
+  düşürmek doğru, ama video dosyasında her kare gerekli; dosya işlerken kare kaybı
+  bununla ortadan kalkıyor.
+- Dört yeni örnek ve [örnek galerisi](examples/README.md): `motion_detection.py`
+  (arka plan çıkarımıyla gerçek tespit, sinir ağı ve indirme yok), `hud_stats.py`
+  (paneli kendi verinle beslemek), `video_file.py` (dosyayı işleyip işaretlenmiş
+  kopyasını yazmak), `image_folder.py` (toplu görsel işaretleme).
+- Playground'da İngilizce/Türkçe seçeneği; varsayılan İngilizce, seçim tarayıcıda
+  saklanıyor ve `?lang=tr` ile de verilebiliyor. Sayfa başlığı her zaman İngilizce.
+
 ## 0.5.0
 
 ### Eklendi

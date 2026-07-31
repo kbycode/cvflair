@@ -1,9 +1,10 @@
 """
-Webcam capture on a background thread, with a one-slot latest-frame queue.
+Video capture on a background thread, with a one-slot latest-frame queue.
 
-The reader thread never blocks on the consumer: before publishing a new frame
-it drops the pending one, so ``read()`` always returns the most recent frame
-and latency does not build up when annotation is slower than the camera.
+For a live camera the reader never blocks on the consumer: before publishing a
+new frame it drops the pending one, so ``read()`` always returns the most recent
+frame and latency does not build up when annotation is slower than the camera.
+Video files want the opposite -- see ``drop_frames``.
 """
 
 from __future__ import annotations
@@ -58,9 +59,14 @@ class Camera:
         height: int | None = None,
         fps: int | None = None,
         window_name: str = "cvflair",
+        drop_frames: bool = True,
         capture_factory: Callable[[Any], Any] = cv2.VideoCapture,
     ) -> None:
         self.source = source
+        #: Dropping the stale frame is right for a live camera. A video file has
+        #: nothing to be late for and every frame counts, so set this to False
+        #: and the reader waits for the consumer instead.
+        self.drop_frames = drop_frames
         self.window_name = window_name
         self.width = width
         self.height = height
@@ -158,7 +164,22 @@ class Camera:
         self._stop_event.set()
 
     def _publish(self, frame: np.ndarray) -> None:
-        """Put ``frame`` in the one-slot queue, discarding whatever was there."""
+        """
+        Hand ``frame`` to the consumer.
+
+        With ``drop_frames`` the pending frame is thrown away so the queue always
+        holds the newest one; without it the reader waits, which is what a video
+        file needs -- there every frame matters and there is nothing to be late for.
+        """
+        if not self.drop_frames:
+            while not self._stop_event.is_set():
+                try:
+                    self._queue.put(frame, timeout=0.1)
+                    return
+                except queue.Full:
+                    continue
+            return
+
         try:
             self._queue.get_nowait()
             self._frames_dropped += 1

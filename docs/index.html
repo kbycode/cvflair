@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>cvflair tema playground</title>
-<meta name="description" content="cvflair temalarını tarayıcıda ayarla, hazır Python kodunu kopyala. Tamamen istemci tarafı.">
+<title>cvflair theme playground</title>
+<meta name="description" content="Tune cvflair themes in the browser and copy the ready Python code. Fully client-side.">
 <style>
   :root {
     --bg: #14161a;
@@ -99,6 +99,10 @@
     color: var(--accent);
   }
 
+  .langs { display: inline-flex; gap: 4px; margin-top: 10px; }
+  .langs button { padding: 4px 10px; font-size: 12px; letter-spacing: .04em; }
+  .langs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
   .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .switch input { accent-color: var(--accent); width: 16px; height: 16px; }
 
@@ -145,20 +149,22 @@
 <body>
 
 <header>
-  <h1>cvflair <span>tema playground</span></h1>
+  <h1>cvflair <span>theme playground</span></h1>
   <p>
-    Temayı burada ayarla, hazır <code>Theme(...)</code> kodunu kopyala.
-    Sayfa tamamen tarayıcıda çalışır: sunucu, hesap ve kayıt yok. Kamera açılırsa
-    görüntü hiçbir yere gönderilmez.
-    <a href="https://github.com/kbycode/cvflair">Depo</a> ·
+    <span data-i18n="intro"></span>
+    <a href="https://github.com/kbycode/cvflair" data-i18n="repo"></a> ·
     <a href="https://pypi.org/project/cvflair/">PyPI</a>
   </p>
+  <div class="langs" id="lang">
+    <button type="button" data-lang="en">EN</button>
+    <button type="button" data-lang="tr">TR</button>
+  </div>
 </header>
 
 <main>
   <div>
     <div class="panel">
-      <h2>Tema</h2>
+      <h2 data-i18n="section.theme"></h2>
       <div class="row">
         <select id="preset">
           <option value="minimal">minimal</option>
@@ -166,125 +172,125 @@
           <option value="pastel">pastel</option>
           <option value="cyberpunk">cyberpunk</option>
           <option value="hud">hud</option>
-          <option value="custom">özel</option>
+          <option value="custom" data-i18n="preset.custom"></option>
         </select>
       </div>
       <div class="row">
-        <label class="title">Renk paleti</label>
+        <label class="title" data-i18n="field.palette"></label>
         <div class="swatches" id="swatches"></div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Kutu</h2>
+      <h2 data-i18n="section.box"></h2>
       <div class="row">
-        <label class="title">Biçim</label>
+        <label class="title" data-i18n="field.style"></label>
         <div class="segmented" id="boxStyle">
-          <button data-value="box" type="button">düz</button>
-          <button data-value="round" type="button">yuvarlak</button>
-          <button data-value="corner" type="button">köşe</button>
-          <button data-value="dashed" type="button">kesikli</button>
-          <button data-value="dashed_corner" type="button">kesikli köşe</button>
-          <button data-value="bracket" type="button">ayraç</button>
-          <button data-value="crosshair" type="button">artı</button>
-          <button data-value="target" type="button">hedef</button>
+          <button data-value="box" type="button" data-i18n="style.box"></button>
+          <button data-value="round" type="button" data-i18n="style.round"></button>
+          <button data-value="corner" type="button" data-i18n="style.corner"></button>
+          <button data-value="dashed" type="button" data-i18n="style.dashed"></button>
+          <button data-value="dashed_corner" type="button" data-i18n="style.dashed_corner"></button>
+          <button data-value="bracket" type="button" data-i18n="style.bracket"></button>
+          <button data-value="crosshair" type="button" data-i18n="style.crosshair"></button>
+          <button data-value="target" type="button" data-i18n="style.target"></button>
         </div>
       </div>
       <div class="row">
-        <label class="title" for="thickness">Kalınlık <b id="thicknessOut"></b></label>
+        <label class="title" for="thickness"><span data-i18n="field.thickness"></span> <b id="thicknessOut"></b></label>
         <input type="range" id="thickness" min="1" max="10" step="1">
       </div>
       <div class="row" data-only="round bracket">
-        <label class="title" for="roundness">Yuvarlama <b id="roundnessOut"></b></label>
+        <label class="title" for="roundness"><span data-i18n="field.roundness"></span> <b id="roundnessOut"></b></label>
         <input type="range" id="roundness" min="0.05" max="1" step="0.05">
       </div>
       <div class="row" data-only="corner dashed_corner bracket target">
-        <label class="title" for="cornerLength">Köşe uzunluğu <b id="cornerLengthOut"></b></label>
+        <label class="title" for="cornerLength"><span data-i18n="field.cornerLength"></span> <b id="cornerLengthOut"></b></label>
         <input type="range" id="cornerLength" min="5" max="60" step="1">
       </div>
       <div class="row" data-only="dashed dashed_corner">
-        <label class="title" for="dashLength">Çizgi boyu <b id="dashLengthOut"></b></label>
+        <label class="title" for="dashLength"><span data-i18n="field.dashLength"></span> <b id="dashLengthOut"></b></label>
         <input type="range" id="dashLength" min="2" max="40" step="1">
       </div>
       <div class="row" data-only="dashed dashed_corner">
-        <label class="title" for="gapLength">Boşluk <b id="gapLengthOut"></b></label>
+        <label class="title" for="gapLength"><span data-i18n="field.gapLength"></span> <b id="gapLengthOut"></b></label>
         <input type="range" id="gapLength" min="2" max="40" step="1">
       </div>
       <div class="row" data-only="crosshair">
-        <label class="title" for="armLength">Kol uzunluğu <b id="armLengthOut"></b></label>
+        <label class="title" for="armLength"><span data-i18n="field.armLength"></span> <b id="armLengthOut"></b></label>
         <input type="range" id="armLength" min="4" max="60" step="1">
       </div>
       <div class="row" data-only="crosshair">
-        <label class="title" for="centerSize">Merkez artı <b id="centerSizeOut"></b></label>
+        <label class="title" for="centerSize"><span data-i18n="field.centerSize"></span> <b id="centerSizeOut"></b></label>
         <input type="range" id="centerSize" min="0" max="40" step="1">
       </div>
       <div class="row" data-only="target">
-        <label class="title" for="edgeThickness">Çerçeve kalınlığı <b id="edgeThicknessOut"></b></label>
+        <label class="title" for="edgeThickness"><span data-i18n="field.edgeThickness"></span> <b id="edgeThicknessOut"></b></label>
         <input type="range" id="edgeThickness" min="1" max="6" step="1">
       </div>
       <div class="row" data-only="dashed_corner bracket crosshair target">
-        <label class="switch"><input type="checkbox" id="accentOn"> İkinci renk (vurgu)</label>
+        <label class="switch"><input type="checkbox" id="accentOn"> <span data-i18n="switch.accentOn"></span></label>
       </div>
       <div class="row" data-only="accent">
-        <label class="title" for="accent">Vurgu rengi <b id="accentOut"></b></label>
+        <label class="title" for="accent"><span data-i18n="field.accent"></span> <b id="accentOut"></b></label>
         <input type="color" id="accent">
       </div>
     </div>
 
     <div class="panel">
-      <h2>Parlama</h2>
+      <h2 data-i18n="section.glow"></h2>
       <div class="row">
-        <label class="switch"><input type="checkbox" id="glow"> Hâle çiz</label>
+        <label class="switch"><input type="checkbox" id="glow"> <span data-i18n="switch.glow"></span></label>
       </div>
       <div class="row" data-only="glow">
-        <label class="title" for="glowThickness">Hâle kalınlığı <b id="glowThicknessOut"></b></label>
+        <label class="title" for="glowThickness"><span data-i18n="field.glowThickness"></span> <b id="glowThicknessOut"></b></label>
         <input type="range" id="glowThickness" min="1" max="20" step="1">
       </div>
       <div class="row" data-only="glow">
-        <label class="title" for="glowDim">Hâle koyuluğu <b id="glowDimOut"></b></label>
+        <label class="title" for="glowDim"><span data-i18n="field.glowDim"></span> <b id="glowDimOut"></b></label>
         <input type="range" id="glowDim" min="0.1" max="0.9" step="0.05">
       </div>
     </div>
 
     <div class="panel">
-      <h2>Sayaç paneli</h2>
+      <h2 data-i18n="section.hud"></h2>
       <div class="row">
-        <label class="switch"><input type="checkbox" id="hud"> Paneli çiz</label>
+        <label class="switch"><input type="checkbox" id="hud"> <span data-i18n="switch.hud"></span></label>
       </div>
       <div class="row" data-only="hud">
-        <label class="title" for="hudPosition">Konum</label>
+        <label class="title" for="hudPosition" data-i18n="field.hudPosition"></label>
         <select id="hudPosition">
-          <option value="top_left">sol üst</option>
-          <option value="top_right">sağ üst</option>
-          <option value="bottom_left">sol alt</option>
-          <option value="bottom_right">sağ alt</option>
+          <option value="top_left" data-i18n="hud.top_left"></option>
+          <option value="top_right" data-i18n="hud.top_right"></option>
+          <option value="bottom_left" data-i18n="hud.bottom_left"></option>
+          <option value="bottom_right" data-i18n="hud.bottom_right"></option>
         </select>
       </div>
       <div class="row" data-only="hud">
-        <label class="title" for="hudOpacity">Panel opaklığı <b id="hudOpacityOut"></b></label>
+        <label class="title" for="hudOpacity"><span data-i18n="field.hudOpacity"></span> <b id="hudOpacityOut"></b></label>
         <input type="range" id="hudOpacity" min="0.1" max="1" step="0.05">
       </div>
     </div>
 
     <div class="panel">
-      <h2>Etiket</h2>
+      <h2 data-i18n="section.label"></h2>
       <div class="row">
         <label class="switch"><input type="checkbox" id="labels" checked> Etiket çiz</label>
       </div>
       <div class="row" data-only="labels">
-        <label class="title" for="textScale">Yazı ölçeği <b id="textScaleOut"></b></label>
+        <label class="title" for="textScale"><span data-i18n="field.textScale"></span> <b id="textScaleOut"></b></label>
         <input type="range" id="textScale" min="0.3" max="1.2" step="0.05">
       </div>
       <div class="row" data-only="labels">
-        <label class="title" for="textPadding">İç boşluk <b id="textPaddingOut"></b></label>
+        <label class="title" for="textPadding"><span data-i18n="field.textPadding"></span> <b id="textPaddingOut"></b></label>
         <input type="range" id="textPadding" min="0" max="20" step="1">
       </div>
       <div class="row" data-only="labels">
-        <label class="title" for="labelRadius">Köşe yarıçapı <b id="labelRadiusOut"></b></label>
+        <label class="title" for="labelRadius"><span data-i18n="field.labelRadius"></span> <b id="labelRadiusOut"></b></label>
         <input type="range" id="labelRadius" min="0" max="20" step="1">
       </div>
       <div class="row" data-only="labels">
-        <label class="title" for="textColor">Yazı rengi <b id="textColorOut"></b></label>
+        <label class="title" for="textColor"><span data-i18n="field.textColor"></span> <b id="textColorOut"></b></label>
         <input type="color" id="textColor">
       </div>
     </div>
@@ -292,30 +298,26 @@
 
   <div>
     <div class="panel">
-      <h2>Önizleme</h2>
+      <h2 data-i18n="section.preview"></h2>
       <div class="preview-wrap">
         <canvas id="canvas" width="880" height="495"></canvas>
         <video id="video" playsinline muted></video>
       </div>
       <div class="actions">
-        <button id="toggleAnimation" type="button">Hareketi durdur</button>
-        <button id="toggleCamera" type="button">Kamerayı aç</button>
-        <button id="downloadPng" type="button">PNG indir</button>
+        <button id="toggleAnimation" type="button"></button>
+        <button id="toggleCamera" type="button"></button>
+        <button id="downloadPng" type="button" data-i18n="button.png"></button>
       </div>
-      <p class="hint">
-        Önizleme OpenCV çizimini yaklaşık taklit eder; yazı tipi tarayıcınınki olduğu
-        için etiket genişliği birebir aynı olmayabilir. Kamera modunda kutular
-        örnektir — tarayıcıda tespit çalışmaz, kutuları çizen model Python tarafında.
-      </p>
+      <p class="hint" data-i18n="hint.preview"></p>
     </div>
 
     <div class="panel">
-      <h2>Python kodu</h2>
+      <h2 data-i18n="section.code"></h2>
       <pre id="code"></pre>
       <div class="actions">
-        <button class="primary" id="copyCode" type="button">Kodu kopyala</button>
-        <button id="copyLink" type="button">Bağlantıyı kopyala</button>
-        <button id="reset" type="button">Sıfırla</button>
+        <button class="primary" id="copyCode" type="button" data-i18n="button.copyCode"></button>
+        <button id="copyLink" type="button" data-i18n="button.copyLink"></button>
+        <button id="reset" type="button" data-i18n="button.reset"></button>
       </div>
       <div class="status" id="status"></div>
     </div>
@@ -323,9 +325,8 @@
 </main>
 
 <footer>
-  cvflair MIT lisanslı; numpy ve opencv dışında bağımlılığı yok. Bu sayfa yalnızca
-  tema ayarlarını üretir —
-  <a href="https://github.com/kbycode/cvflair">kaynak kodu</a>.
+  <span data-i18n="footer"></span>
+  <a href="https://github.com/kbycode/cvflair" data-i18n="footer.source"></a>.
 </footer>
 
 <script>
@@ -394,6 +395,183 @@ const MAX_COLORS = 8;
 
 // Sahne figürleri. Kutular bu figürlerin gerçek sınırlarından hesaplanır, elle
 // yerleştirilmez; hareket ettiklerinde kutu da onlarla birlikte gider.
+// --- Diller. Başlık her zaman İngilizce; gerisi seçime göre değişir, seçim
+// localStorage'da tutulur ve ?lang= ile de verilebilir.
+const I18N = {
+  en: {
+    "intro": "Tune a theme here and copy the ready Theme(...) code. The page runs entirely in your browser: no server, no account, nothing stored. With the camera on, the image never leaves this tab.",
+    "repo": "Repo",
+    "section.theme": "Theme",
+    "section.box": "Box",
+    "section.glow": "Glow",
+    "section.hud": "Stats panel",
+    "section.label": "Label",
+    "section.preview": "Preview",
+    "section.code": "Python code",
+    "preset.custom": "custom",
+    "field.palette": "Colour palette",
+    "field.style": "Style",
+    "field.thickness": "Thickness",
+    "field.roundness": "Rounding",
+    "field.cornerLength": "Corner length",
+    "field.dashLength": "Dash length",
+    "field.gapLength": "Gap",
+    "field.armLength": "Arm length",
+    "field.centerSize": "Centre cross",
+    "field.edgeThickness": "Edge thickness",
+    "field.glowThickness": "Halo thickness",
+    "field.glowDim": "Halo darkness",
+    "field.textScale": "Text scale",
+    "field.textPadding": "Padding",
+    "field.labelRadius": "Corner radius",
+    "field.textColor": "Text colour",
+    "field.accent": "Accent colour",
+    "field.hudPosition": "Position",
+    "field.hudOpacity": "Panel opacity",
+    "style.box": "box",
+    "style.round": "round",
+    "style.corner": "corner",
+    "style.dashed": "dashed",
+    "style.dashed_corner": "dashed corner",
+    "style.bracket": "bracket",
+    "style.crosshair": "crosshair",
+    "style.target": "target",
+    "switch.glow": "Draw halo",
+    "switch.labels": "Draw labels",
+    "switch.hud": "Draw panel",
+    "switch.accentOn": "Second colour (accent)",
+    "hud.top_left": "top left",
+    "hud.top_right": "top right",
+    "hud.bottom_left": "bottom left",
+    "hud.bottom_right": "bottom right",
+    "button.png": "Download PNG",
+    "button.copyCode": "Copy code",
+    "button.copyLink": "Copy link",
+    "button.reset": "Reset",
+    "button.pause": "Pause motion",
+    "button.play": "Resume motion",
+    "button.cameraOn": "Open camera",
+    "button.cameraOff": "Close camera",
+    "hint.preview": "The preview approximates OpenCV drawing; the font is your browser's, so label widths are not identical. In camera mode the boxes are placeholders — no detection runs in the browser, that part lives in Python.",
+    "footer": "cvflair is MIT licensed and depends only on numpy and opencv. This page produces theme settings and nothing else —",
+    "footer.source": "source code",
+    "status.code": "Code copied.",
+    "status.link": "Link copied.",
+    "status.copyFailed": "Could not copy — select the text by hand.",
+    "status.camera": "The image is processed in this tab only.",
+    "status.cameraFailed": "Could not reach the camera.",
+    "swatch.remove": "Remove colour",
+    "swatch.add": "+ colour",
+    "swatch.label": "colour",
+  },
+  tr: {
+    "intro": "Temayı burada ayarla, hazır Theme(...) kodunu kopyala. Sayfa tamamen tarayıcıda çalışır: sunucu, hesap ve kayıt yok. Kamera açılırsa görüntü bu sekmeden çıkmaz.",
+    "repo": "Depo",
+    "section.theme": "Tema",
+    "section.box": "Kutu",
+    "section.glow": "Parlama",
+    "section.hud": "Sayaç paneli",
+    "section.label": "Etiket",
+    "section.preview": "Önizleme",
+    "section.code": "Python kodu",
+    "preset.custom": "özel",
+    "field.palette": "Renk paleti",
+    "field.style": "Biçim",
+    "field.thickness": "Kalınlık",
+    "field.roundness": "Yuvarlama",
+    "field.cornerLength": "Köşe uzunluğu",
+    "field.dashLength": "Çizgi boyu",
+    "field.gapLength": "Boşluk",
+    "field.armLength": "Kol uzunluğu",
+    "field.centerSize": "Merkez artı",
+    "field.edgeThickness": "Çerçeve kalınlığı",
+    "field.glowThickness": "Hâle kalınlığı",
+    "field.glowDim": "Hâle koyuluğu",
+    "field.textScale": "Yazı ölçeği",
+    "field.textPadding": "İç boşluk",
+    "field.labelRadius": "Köşe yarıçapı",
+    "field.textColor": "Yazı rengi",
+    "field.accent": "Vurgu rengi",
+    "field.hudPosition": "Konum",
+    "field.hudOpacity": "Panel opaklığı",
+    "style.box": "düz",
+    "style.round": "yuvarlak",
+    "style.corner": "köşe",
+    "style.dashed": "kesikli",
+    "style.dashed_corner": "kesikli köşe",
+    "style.bracket": "ayraç",
+    "style.crosshair": "artı",
+    "style.target": "hedef",
+    "switch.glow": "Hâle çiz",
+    "switch.labels": "Etiket çiz",
+    "switch.hud": "Paneli çiz",
+    "switch.accentOn": "İkinci renk (vurgu)",
+    "hud.top_left": "sol üst",
+    "hud.top_right": "sağ üst",
+    "hud.bottom_left": "sol alt",
+    "hud.bottom_right": "sağ alt",
+    "button.png": "PNG indir",
+    "button.copyCode": "Kodu kopyala",
+    "button.copyLink": "Bağlantıyı kopyala",
+    "button.reset": "Sıfırla",
+    "button.pause": "Hareketi durdur",
+    "button.play": "Hareketi başlat",
+    "button.cameraOn": "Kamerayı aç",
+    "button.cameraOff": "Kamerayı kapat",
+    "hint.preview": "Önizleme OpenCV çizimini yaklaşık taklit eder; yazı tipi tarayıcınınki olduğu için etiket genişliği birebir aynı olmayabilir. Kamera modunda kutular örnektir — tarayıcıda tespit çalışmaz, o kısım Python tarafında.",
+    "footer": "cvflair MIT lisanslı; numpy ve opencv dışında bağımlılığı yok. Bu sayfa yalnızca tema ayarlarını üretir —",
+    "footer.source": "kaynak kodu",
+    "status.code": "Kod kopyalandı.",
+    "status.link": "Bağlantı kopyalandı.",
+    "status.copyFailed": "Kopyalanamadı — metni elle seçmek gerekiyor.",
+    "status.camera": "Görüntü yalnızca bu sekmede işleniyor.",
+    "status.cameraFailed": "Kameraya erişilemedi.",
+    "swatch.remove": "Rengi kaldır",
+    "swatch.add": "+ renk",
+    "swatch.label": "renk",
+  },
+};
+
+let language = "en";
+
+function t(key) {
+  return (I18N[language] && I18N[language][key]) || I18N.en[key] || key;
+}
+
+function applyLanguage(next) {
+  language = I18N[next] ? next : "en";
+  document.documentElement.lang = language;
+  try {
+    localStorage.setItem("cvflair-lang", language);
+  } catch {
+    // Depolama kapalıysa seçim yalnızca bu sekme için geçerli olur.
+  }
+
+  for (const node of document.querySelectorAll("[data-i18n]")) {
+    node.textContent = t(node.dataset.i18n);
+  }
+  for (const button of document.querySelectorAll("#lang button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === language));
+  }
+  document.getElementById("toggleAnimation").textContent =
+    animating ? t("button.pause") : t("button.play");
+  document.getElementById("toggleCamera").textContent =
+    cameraStream ? t("button.cameraOff") : t("button.cameraOn");
+  renderSwatches();
+}
+
+function initialLanguage() {
+  const asked = new URLSearchParams(location.search).get("lang");
+  if (I18N[asked]) return asked;
+  try {
+    const saved = localStorage.getItem("cvflair-lang");
+    if (I18N[saved]) return saved;
+  } catch {
+    // erişilemiyorsa varsayılana düşülür
+  }
+  return "en";
+}
+
 const GROUND = 0.9;
 const FIGURE = "#98a1b2";
 const FIGURE_DARK = "#6c7488";
@@ -1169,7 +1347,7 @@ function renderSwatches() {
     const input = document.createElement("input");
     input.type = "color";
     input.value = colour;
-    input.setAttribute("aria-label", (index + 1) + ". renk");
+    input.setAttribute("aria-label", (index + 1) + ". " + t("swatch.label"));
     input.addEventListener("input", () => update(() => { state.palette[index] = input.value; }));
     wrap.append(input);
 
@@ -1177,7 +1355,7 @@ function renderSwatches() {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "×";
-      remove.title = "Rengi kaldır";
+      remove.title = t("swatch.remove");
       remove.addEventListener("click", () => update(() => { state.palette.splice(index, 1); }));
       wrap.append(remove);
     }
@@ -1187,7 +1365,7 @@ function renderSwatches() {
   if (state.palette.length < MAX_COLORS) {
     const add = document.createElement("button");
     add.type = "button";
-    add.textContent = "+ renk";
+    add.textContent = t("swatch.add");
     add.addEventListener("click", () => update(() => {
       state.palette.push(state.palette[state.palette.length - 1]);
     }));
@@ -1242,7 +1420,7 @@ function bindControls() {
 
   document.getElementById("toggleAnimation").addEventListener("click", (event) => {
     animating = !animating;
-    event.target.textContent = animating ? "Hareketi durdur" : "Hareketi başlat";
+    event.target.textContent = animating ? t("button.pause") : t("button.play");
   });
 
   document.getElementById("toggleCamera").addEventListener("click", toggleCamera);
@@ -1255,12 +1433,12 @@ function bindControls() {
   });
 
   document.getElementById("copyCode").addEventListener("click", () => {
-    copy(pythonCode(), "Kod kopyalandı.");
+    copy(pythonCode(), t("status.code"));
   });
   document.getElementById("copyLink").addEventListener("click", () => {
     const url = shareUrl();
     history.replaceState(null, "", url);
-    copy(url, "Bağlantı kopyalandı.");
+    copy(url, t("status.link"));
   });
   document.getElementById("reset").addEventListener("click", () => {
     state = structuredClone(DEFAULT_STATE);
@@ -1275,7 +1453,7 @@ async function copy(text, message) {
     await navigator.clipboard.writeText(text);
     setStatus(message);
   } catch {
-    setStatus("Kopyalanamadı — metni elle seçmek gerekiyor.");
+    setStatus(t("status.copyFailed"));
   }
 }
 
@@ -1283,22 +1461,26 @@ async function toggleCamera(event) {
   if (cameraStream) {
     cameraStream.getTracks().forEach((track) => track.stop());
     cameraStream = null;
-    event.target.textContent = "Kamerayı aç";
+    event.target.textContent = t("button.cameraOn");
     return;
   }
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
     video.srcObject = cameraStream;
     await video.play();
-    event.target.textContent = "Kamerayı kapat";
-    setStatus("Görüntü yalnızca bu sekmede işleniyor.");
+    event.target.textContent = t("button.cameraOff");
+    setStatus(t("status.camera"));
   } catch {
-    setStatus("Kameraya erişilemedi.");
+    setStatus(t("status.cameraFailed"));
   }
 }
 
 readUrl();
 bindControls();
+for (const button of document.querySelectorAll("#lang button")) {
+  button.addEventListener("click", () => applyLanguage(button.dataset.lang));
+}
+applyLanguage(initialLanguage());
 syncControls();
 fitCanvas();
 // Yerleşim oturduğunda ve panel yeniden boyutlandığında tuval kendini toplar;

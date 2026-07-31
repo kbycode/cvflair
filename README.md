@@ -204,10 +204,14 @@ Ayarları tarayıcıda deneyip hazır `Theme(...)` kodunu kopyalamak için:
 **[tema playground](https://kbycode.github.io/cvflair/)** — kurulum gerektirmez,
 tamamen istemci tarafında çalışır, ayarlar bağlantıda taşınır.
 
-Temaları yerelde görmenin iki yolu:
+Playground İngilizce açılır, sağ üstteki **TR** düğmesiyle Türkçeye geçer.
+
+Temaları yerelde görmek ve kendi modelini bağlamak için sekiz örnek var —
+[örnek galerisi](examples/README.md):
 
 ```bash
-python examples/demo_fake_detections.py   # canlı kamera + hareketli sahte tespitler
+python examples/motion_detection.py       # gerçek tespit, sinir ağı yok
+python examples/hud_stats.py              # sayaç panelini kendi verinle besle
 python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye çizer
 ```
 

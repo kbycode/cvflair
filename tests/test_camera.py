@@ -157,3 +157,19 @@ def test_repr_reports_source_and_theme(camera_factory):
     camera, _ = camera_factory(frame_count=1, theme="neon")
 
     assert repr(camera) == "Camera(source='fake', theme='neon', stopped)"
+
+
+def test_dropping_is_on_by_default(camera_factory):
+    camera, _ = camera_factory(frame_count=1)
+
+    assert camera.drop_frames is True
+
+
+def test_backpressure_keeps_every_frame(camera_factory):
+    """drop_frames=False: dosya kaynağında hiçbir kare atlanmamalı."""
+    camera, _ = camera_factory(frame_count=25, delay=0.001, drop_frames=False)
+
+    markers = [frame_marker(frame) for frame in camera.stream(timeout=2.0)]
+
+    assert markers == list(range(1, 26))
+    assert camera.frames_dropped == 0
