@@ -19,6 +19,7 @@ yok**. Model bağımsızdır: kutu üreten her kaynak (YOLO, MediaPipe, InsightF
 
 **Sekiz çerçeve biçimi, beş hazır tema, el ve poz iskeleti — hepsi tek `Theme(...)` satırıyla.**
 Hiçbirini kurmadan denemek için: **[tema playground →](https://kbycode.github.io/cvflair/)**
+Önizlemede kutu ve iskelet kipleri ayrı ayrı denenebiliyor.
 Ayarları oynat, hazır Python kodunu kopyala; sayfa tamamen tarayıcıda çalışır.
 
 ![çerçeve biçimleri](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/box-styles.png)

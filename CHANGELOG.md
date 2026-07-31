@@ -17,6 +17,10 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
   kütüphaneler için ölçekleme.
 - [`examples/hand_skeleton.py`](examples/hand_skeleton.py) ve
   [belgesi](docs/noktalar.md).
+- Playground'da **iskelet önizleme kipi**: el ve poz iskeleti canlı çiziliyor,
+  kemik/eklem ayarları oradan yapılıyor. Kutu ve etiket ayarları o kipte
+  gizleniyor, üretilen kod da iskelet kullanımını gösteriyor — iki aile
+  birbirine karışmıyor.
 
 ## 0.8.1
 

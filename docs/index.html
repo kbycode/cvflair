@@ -92,6 +92,7 @@
   button.primary { background: var(--accent); color: #10240a; border-color: var(--accent); font-weight: 600; }
 
   .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .segmented.two { grid-template-columns: repeat(2, 1fr); }
   .segmented button { padding: 7px 4px; font-size: 13px; }
   .segmented button[aria-pressed="true"] {
     background: var(--panel-2);
@@ -177,13 +178,20 @@
         </select>
       </div>
       <div class="row">
+        <label class="title" data-i18n="field.preview"></label>
+        <div class="segmented two" id="preview">
+          <button data-value="boxes" type="button" data-i18n="preview.boxes"></button>
+          <button data-value="skeleton" type="button" data-i18n="preview.skeleton"></button>
+        </div>
+      </div>
+      <div class="row">
         <label class="title" data-i18n="field.palette"></label>
         <div class="swatches" id="swatches"></div>
         <p class="hint" data-i18n="palette.hint"></p>
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-only="mode:boxes">
       <h2 data-i18n="section.box"></h2>
       <div class="row">
         <label class="title" data-i18n="field.style"></label>
@@ -239,6 +247,19 @@
       </div>
     </div>
 
+    <div class="panel" data-only="mode:skeleton">
+      <h2 data-i18n="section.pose"></h2>
+      <div class="row">
+        <label class="title" for="poseThickness"><span data-i18n="field.poseThickness"></span> <b id="poseThicknessOut"></b></label>
+        <input type="range" id="poseThickness" min="1" max="10" step="1">
+      </div>
+      <div class="row">
+        <label class="title" for="poseRadius"><span data-i18n="field.poseRadius"></span> <b id="poseRadiusOut"></b></label>
+        <input type="range" id="poseRadius" min="1" max="12" step="1">
+      </div>
+      <p class="hint" data-i18n="pose.hint"></p>
+    </div>
+
     <div class="panel">
       <h2 data-i18n="section.glow"></h2>
       <div class="row">
@@ -274,7 +295,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-only="mode:boxes">
       <h2 data-i18n="section.label"></h2>
       <div class="row">
         <label class="switch"><input type="checkbox" id="labels" checked> Etiket çiz</label>
@@ -340,6 +361,9 @@ const DEFAULTS = {
   glow: false, glowThickness: 5, glowDim: 0.45,
   labels: true, textColor: "#000000", textScale: 0.5, textPadding: 6, labelRadius: 0,
   hud: false, hudPosition: "top_left", hudOpacity: 0.6,
+  poseThickness: 2, poseRadius: 3,
+  // Önizleme kipi tema ayarı değil, yalnızca neyin gösterileceğini seçer.
+  preview: "boxes",
 };
 
 // --- Temalar: src/cvflair/themes.py içindeki preset'lerin birebir karşılığı ---
@@ -380,6 +404,7 @@ const PRESETS = {
 const URL_KEYS = {
   p: "palette", a: "accent", s: "boxStyle", t: "thickness", r: "roundness", c: "cornerLength",
   dl: "dashLength", gl: "gapLength", al: "armLength", cs: "centerSize", et: "edgeThickness",
+  pt: "poseThickness", pr: "poseRadius", pv: "preview",
   g: "glow", gt: "glowThickness", gd: "glowDim",
   l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
   h: "hud", hp: "hudPosition", ho: "hudOpacity",
@@ -401,6 +426,13 @@ const I18N = {
   en: {
     "intro": "Tune a theme here and copy the ready Theme(...) code. The page runs entirely in your browser: no server, no account, nothing stored.",
     "repo": "Repo",
+    "field.preview": "Preview",
+    "preview.boxes": "boxes",
+    "preview.skeleton": "skeleton",
+    "section.pose": "Skeleton",
+    "field.poseThickness": "Bone thickness",
+    "field.poseRadius": "Joint size",
+    "pose.hint": "Bones take the palette colour, joints take the accent when the theme has one. Points come from your model — cvflair only draws them.",
     "section.theme": "Theme",
     "section.box": "Box",
     "section.glow": "Glow",
@@ -450,7 +482,7 @@ const I18N = {
     "button.reset": "Reset",
     "button.pause": "Pause motion",
     "button.play": "Resume motion",
-    "hint.preview": "The preview approximates OpenCV drawing; the font is your browser's, so label widths are not identical. The scene and the boxes are drawn here — detection itself lives in Python.",
+    "hint.preview": "The preview approximates OpenCV drawing; the font is your browser's, so label widths are not identical. The scene, the boxes and the skeletons are drawn here — detection itself lives in Python.",
     "footer": "cvflair is MIT licensed and depends only on numpy and opencv. This page produces theme settings and nothing else —",
     "footer.source": "source code",
     "status.code": "Code copied.",
@@ -466,6 +498,13 @@ const I18N = {
   tr: {
     "intro": "Temayı burada ayarla, hazır Theme(...) kodunu kopyala. Sayfa tamamen tarayıcıda çalışır: sunucu, hesap ve kayıt yok.",
     "repo": "Depo",
+    "field.preview": "Önizleme",
+    "preview.boxes": "kutular",
+    "preview.skeleton": "iskelet",
+    "section.pose": "İskelet",
+    "field.poseThickness": "Kemik kalınlığı",
+    "field.poseRadius": "Eklem boyu",
+    "pose.hint": "Kemikler palet rengini, eklemler vurgu rengini alır. Noktalar senin modelinden gelir — cvflair yalnızca çizer.",
     "section.theme": "Tema",
     "section.box": "Kutu",
     "section.glow": "Parlama",
@@ -515,7 +554,7 @@ const I18N = {
     "button.reset": "Sıfırla",
     "button.pause": "Hareketi durdur",
     "button.play": "Hareketi başlat",
-    "hint.preview": "Önizleme OpenCV çizimini yaklaşık taklit eder; yazı tipi tarayıcınınki olduğu için etiket genişliği birebir aynı olmayabilir. Sahne ve kutular burada çiziliyor; tespitin kendisi Python tarafında.",
+    "hint.preview": "Önizleme OpenCV çizimini yaklaşık taklit eder; yazı tipi tarayıcınınki olduğu için etiket genişliği birebir aynı olmayabilir. Sahne, kutular ve iskeletler burada çiziliyor; tespitin kendisi Python tarafında.",
     "footer": "cvflair MIT lisanslı; numpy ve opencv dışında bağımlılığı yok. Bu sayfa yalnızca tema ayarlarını üretir —",
     "footer.source": "kaynak kodu",
     "status.code": "Kod kopyalandı.",
@@ -567,6 +606,24 @@ function initialLanguage() {
   }
   return "en";
 }
+
+// İskelet topolojileri: src/cvflair/keypoints.py içindekilerle birebir aynı.
+const HAND_EDGES = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  [13, 17], [17, 18], [18, 19], [19, 20],
+  [0, 17],
+];
+const POSE_EDGES = [
+  [0, 1], [0, 2], [1, 3], [2, 4],
+  [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+  [5, 11], [6, 12], [11, 12],
+  [11, 13], [13, 15], [12, 14], [14, 16],
+];
+//: Parmak yönü (radyan) ve boy çarpanı.
+const FINGERS = [[-1.35, 0.62], [-0.42, 1.0], [-0.12, 1.08], [0.18, 1.0], [0.5, 0.82]];
 
 const GROUND = 0.9;
 const FIGURE = "#98a1b2";
@@ -665,6 +722,8 @@ function readUrl() {
       if (isHex(raw)) state.textColor = normaliseHex(raw);
     } else if (field === "accent") {
       state.accent = isHex(raw) ? normaliseHex(raw) : null;
+    } else if (field === "preview") {
+      if (["boxes", "skeleton"].includes(raw)) state.preview = raw;
     } else if (field === "hudPosition") {
       if (HUD_POSITIONS.includes(raw)) state.hudPosition = raw;
     } else if (field === "glow" || field === "labels" || field === "hud") {
@@ -690,6 +749,8 @@ function clampState() {
   state.glowThickness = clamp(Math.round(state.glowThickness), 1, 20);
   state.glowDim = clamp(state.glowDim, 0.1, 0.9);
   state.hudOpacity = clamp(state.hudOpacity, 0.1, 1);
+  state.poseThickness = clamp(Math.round(state.poseThickness), 1, 10);
+  state.poseRadius = clamp(Math.round(state.poseRadius), 1, 12);
   state.textScale = clamp(state.textScale, 0.3, 1.2);
   state.textPadding = clamp(Math.round(state.textPadding), 0, 20);
   state.labelRadius = clamp(Math.round(state.labelRadius), 0, 20);
@@ -725,6 +786,11 @@ function shareUrl() {
     params.set("gt", String(state.glowThickness));
     params.set("gd", String(state.glowDim));
   }
+  if (state.preview === "skeleton") {
+    params.set("pv", "skeleton");
+    params.set("pt", String(state.poseThickness));
+    params.set("pr", String(state.poseRadius));
+  }
   params.set("h", state.hud ? "1" : "0");
   if (state.hud) {
     params.set("hp", state.hudPosition);
@@ -755,15 +821,23 @@ function pythonCode() {
     lines.push('    accent_palette="' + state.accent.toUpperCase() + '",');
   }
 
-  if (state.boxStyle !== DEFAULTS.boxStyle) lines.push('    box_style="' + state.boxStyle + '",');
-  if (state.thickness !== DEFAULTS.thickness) lines.push("    thickness=" + state.thickness + ",");
-  if (["round", "bracket"].includes(state.boxStyle) && state.roundness !== DEFAULTS.roundness) {
+  // İskelet kipinde kutu ve etiket ayarları koda girmiyor: seçilen aile neyse
+  // üretilen kod da onu anlatmalı.
+  const skeletonMode = state.preview === "skeleton";
+
+  if (!skeletonMode && state.boxStyle !== DEFAULTS.boxStyle) {
+    lines.push('    box_style="' + state.boxStyle + '",');
+  }
+  if (!skeletonMode && state.thickness !== DEFAULTS.thickness) {
+    lines.push("    thickness=" + state.thickness + ",");
+  }
+  if (!skeletonMode && ["round", "bracket"].includes(state.boxStyle) && state.roundness !== DEFAULTS.roundness) {
     lines.push("    roundness=" + state.roundness + ",");
   }
-  if (CORNER_STYLES.includes(state.boxStyle) && state.cornerLength !== DEFAULTS.cornerLength) {
+  if (!skeletonMode && CORNER_STYLES.includes(state.boxStyle) && state.cornerLength !== DEFAULTS.cornerLength) {
     lines.push("    corner_length=" + state.cornerLength + ",");
   }
-  if (DASH_STYLES.includes(state.boxStyle)) {
+  if (!skeletonMode && DASH_STYLES.includes(state.boxStyle)) {
     if (state.dashLength !== DEFAULTS.dashLength) {
       lines.push("    dash_length=" + state.dashLength + ",");
     }
@@ -771,7 +845,7 @@ function pythonCode() {
       lines.push("    gap_length=" + state.gapLength + ",");
     }
   }
-  if (state.boxStyle === "crosshair") {
+  if (!skeletonMode && state.boxStyle === "crosshair") {
     if (state.armLength !== DEFAULTS.armLength) {
       lines.push("    arm_length=" + state.armLength + ",");
     }
@@ -779,7 +853,7 @@ function pythonCode() {
       lines.push("    center_size=" + state.centerSize + ",");
     }
   }
-  if (state.boxStyle === "target" && state.edgeThickness !== DEFAULTS.edgeThickness) {
+  if (!skeletonMode && state.boxStyle === "target" && state.edgeThickness !== DEFAULTS.edgeThickness) {
     lines.push("    edge_thickness=" + state.edgeThickness + ",");
   }
   if (state.glow) {
@@ -788,6 +862,14 @@ function pythonCode() {
       lines.push("    glow_thickness=" + state.glowThickness + ",");
     }
     if (state.glowDim !== DEFAULTS.glowDim) lines.push("    glow_dim=" + state.glowDim + ",");
+  }
+  if (state.preview === "skeleton") {
+    if (state.poseThickness !== DEFAULTS.poseThickness) {
+      lines.push("    pose_thickness=" + state.poseThickness + ",");
+    }
+    if (state.poseRadius !== DEFAULTS.poseRadius) {
+      lines.push("    pose_radius=" + state.poseRadius + ",");
+    }
   }
   if (state.hud) {
     lines.push("    hud=True,");
@@ -798,7 +880,9 @@ function pythonCode() {
       lines.push("    hud_opacity=" + state.hudOpacity + ",");
     }
   }
-  if (!state.labels) {
+  if (skeletonMode) {
+    // etiket çizimi yalnızca kutularda kullanılıyor
+  } else if (!state.labels) {
     lines.push("    labels=False,");
   } else {
     if (state.textColor !== DEFAULTS.textColor) {
@@ -813,17 +897,23 @@ function pythonCode() {
     }
   }
 
-  return [
-    "from cvflair import Camera, Theme",
-    "",
-    "theme = Theme(",
-    ...lines,
-    ")",
-    "",
-    'cam = Camera(source=0, theme=theme)',
-    "for frame, detections in cam.stream(model=\"yolov8n.pt\"):",
-    "    cam.show(frame, detections)",
-  ].join("\n");
+  const header = skeletonMode
+    ? "from cvflair import HAND_21, Camera, KeyPoints, Theme"
+    : "from cvflair import Camera, Theme";
+  const tail = skeletonMode
+    ? [
+        'cam = Camera(source=0, theme=theme)',
+        "for frame in cam.stream():",
+        "    points = KeyPoints(xy=el_noktalarini_bul(frame))   # senin modelin",
+        "    cam.show(frame, keypoints=points, skeleton=HAND_21)",
+      ]
+    : [
+        'cam = Camera(source=0, theme=theme)',
+        'for frame, detections in cam.stream(model="yolov8n.pt"):',
+        "    cam.show(frame, detections)",
+      ];
+
+  return [header, "", "theme = Theme(", ...lines, ")", "", ...tail].join("\n");
 }
 
 // --- çizim -----------------------------------------------------------------
@@ -1178,7 +1268,7 @@ function actorFrames(width, height) {
   });
 }
 
-function drawScene(frames, width, height) {
+function drawBackdrop(width, height) {
   const sky = ctx.createLinearGradient(0, 0, 0, height);
   sky.addColorStop(0, "#171a1f");
   sky.addColorStop(1, "#2c3038");
@@ -1194,6 +1284,10 @@ function drawScene(frames, width, height) {
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   segment(0, groundY + 0.5, width, groundY + 0.5);
+}
+
+function drawScene(frames, width, height) {
+  drawBackdrop(width, height);
 
   // Arkadaki figürler önce çizilir, öndekiler onların üstünü kapatır.
   for (const frame of [...frames].sort((a, b) => a.groundY - b.groundY)) {
@@ -1247,6 +1341,92 @@ function drawHud(width, height, objectCount) {
   });
 }
 
+function handPoints(cx, cy, curl, scale) {
+  const points = [[cx, cy]];
+  for (const [angle, length] of FINGERS) {
+    let x = cx + Math.sin(angle) * 46 * length * scale;
+    let y = cy - Math.cos(angle) * 46 * length * scale;
+    let heading = angle;
+    points.push([x, y]);
+    for (let joint = 0; joint < 3; joint += 1) {
+      heading += curl * 0.75;
+      x += Math.sin(heading) * (22 - joint * 2) * length * scale;
+      y -= Math.cos(heading) * (22 - joint * 2) * length * scale;
+      points.push([x, y]);
+    }
+  }
+  return points;
+}
+
+function posePoints(cx, cy, time, scale) {
+  const swing = Math.sin(time * 3.2);
+  const bob = Math.abs(Math.cos(time * 3.2)) * 3 * scale;
+  const at = (dx, dy) => [cx + dx * scale, cy + dy * scale - bob];
+  return [
+    at(0, -152),                                   // burun
+    at(-8, -159), at(8, -159),                     // gözler
+    at(-17, -153), at(17, -153),                   // kulaklar
+    at(-28, -124), at(28, -124),                   // omuzlar
+    at(-36 - swing * 9, -88), at(36 + swing * 9, -88),     // dirsekler
+    at(-33 - swing * 16, -54), at(33 + swing * 16, -54),   // bilekler
+    at(-18, -76), at(18, -76),                     // kalçalar
+    // Salınım kalça genişliğini aşmıyor: bacaklar birbirini kesmiyor.
+    at(-18 + swing * 7, -40), at(18 + swing * 7, -40),     // dizler
+    at(-18 + swing * 13, -2), at(18 + swing * 13, -2),     // ayak bilekleri
+  ];
+}
+
+function strokeSkeleton(points, edges, colour, thickness) {
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = thickness;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  for (const [first, second] of edges) {
+    if (first >= points.length || second >= points.length) continue;
+    ctx.moveTo(points[first][0], points[first][1]);
+    ctx.lineTo(points[second][0], points[second][1]);
+  }
+  ctx.stroke();
+}
+
+function drawSkeletons(width, height) {
+  drawBackdrop(width, height);
+
+  const scale = Math.min(width / 880, height / 495) * 1.25;
+  const time = sceneTime;
+  const curl = 0.12 + 0.5 * ((Math.sin(time * 1.6) + 1) / 2);
+  const skeletons = [
+    {
+      points: handPoints(width * 0.28, height * 0.78, curl, scale),
+      edges: HAND_EDGES,
+      colour: state.palette[0],
+    },
+    {
+      points: posePoints(width * 0.7, height * 0.9, time, scale),
+      edges: POSE_EDGES,
+      colour: state.palette[1 % state.palette.length],
+    },
+  ];
+
+  for (const { points, edges, colour } of skeletons) {
+    if (state.glow) {
+      strokeSkeleton(
+        points, edges, dim(colour, state.glowDim),
+        state.poseThickness + state.glowThickness,
+      );
+    }
+    strokeSkeleton(points, edges, colour, state.poseThickness);
+
+    ctx.fillStyle = usesAccent() ? state.accent : colour;
+    for (const [x, y] of points) {
+      ctx.beginPath();
+      ctx.arc(x, y, state.poseRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 function render(now = performance.now()) {
   // Sekme arka plandayken kareler durur; sıçramayı önlemek için adım sınırlanır.
   const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.05) : 0;
@@ -1255,8 +1435,15 @@ function render(now = performance.now()) {
   if (delta > 0) displayFps = displayFps ? displayFps * 0.9 + (1 / delta) * 0.1 : 1 / delta;
 
   const { width, height } = view;
-  const frames = actorFrames(width, height);
 
+  if (state.preview === "skeleton") {
+    drawSkeletons(width, height);
+    if (state.hud) drawHud(width, height, 2);
+    requestAnimationFrame(render);
+    return;
+  }
+
+  const frames = actorFrames(width, height);
   drawScene(frames, width, height);
 
   frames.forEach((frame, index) => {
@@ -1287,9 +1474,11 @@ const SLIDERS = [
   "thickness", "roundness", "cornerLength", "dashLength", "gapLength",
   "armLength", "centerSize", "edgeThickness",
   "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius", "hudOpacity",
+  "poseThickness", "poseRadius",
 ];
 
 function rowIsVisible(token) {
+  if (token.startsWith("mode:")) return state.preview === token.slice(5);
   if (token === "hud") return state.hud;
   if (token === "glow") return state.glow;
   if (token === "labels") return state.labels;
@@ -1316,6 +1505,9 @@ function syncControls() {
 
   for (const button of document.querySelectorAll("#boxStyle button")) {
     button.setAttribute("aria-pressed", String(button.dataset.value === state.boxStyle));
+  }
+  for (const button of document.querySelectorAll("#preview button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.value === state.preview));
   }
   for (const row of document.querySelectorAll("[data-only]")) {
     const visible = row.dataset.only.split(" ").some(rowIsVisible);
@@ -1416,6 +1608,9 @@ function bindControls() {
   });
   for (const button of document.querySelectorAll("#boxStyle button")) {
     button.addEventListener("click", () => update(() => { state.boxStyle = button.dataset.value; }));
+  }
+  for (const button of document.querySelectorAll("#preview button")) {
+    button.addEventListener("click", () => update(() => { state.preview = button.dataset.value; }));
   }
 
   document.getElementById("toggleAnimation").addEventListener("click", (event) => {

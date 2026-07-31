@@ -78,6 +78,13 @@ Kutularda olduğu gibi: `NaN`, sonsuz veya güven eşiğinin altındaki noktalar
 çizilmez. O noktaya bağlı kemikler de atlanır, iskeletin geri kalanı çizilmeye
 devam eder — model bir eklemi kaybettiğinde çizim durmaz.
 
+## Tarayıcıda denemek
+
+[Tema playground](https://kbycode.github.io/cvflair/) önizlemesinde **iskelet**
+kipi var: el ve poz iskeleti canlı çiziliyor, kemik kalınlığı ile eklem boyu
+oradan ayarlanıyor. Kutu ayarları o kipte gizleniyor, üretilen kod da iskelet
+kullanımını gösteriyor.
+
 ## Örnek
 
 [`examples/hand_skeleton.py`](https://github.com/kbycode/cvflair/blob/main/examples/hand_skeleton.py)
