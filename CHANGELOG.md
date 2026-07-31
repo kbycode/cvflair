@@ -4,6 +4,11 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
 ## Yayınlanmamış
 
+### Değişti
+- Playground'daki kamera önizlemesi kaldırıldı. Tarayıcıda tespit çalışmadığı
+  için kutular sahte kalıyordu; ayarları görmeye bir katkısı yoktu, kamera izni
+  istemesi ise gereksizdi.
+
 ### Depo
 - Tip denetimi CI'ya eklendi (`mypy`). Paket `py.typed` gönderiyordu ama tip iddiası
   denetlenmiyordu; ilk koşuda üç gerçek sorun çıktı ve düzeltildi (annotator
