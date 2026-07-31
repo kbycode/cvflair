@@ -13,6 +13,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+import cv2
 import numpy as np
 
 from .annotators import (
@@ -122,6 +123,10 @@ class Theme:
                     if self.accent_palette is not None
                     else None
                 ),
+                # The halo is dim and sits behind the main outline, so its
+                # anti-aliasing never shows -- and it costs four times as much
+                # per arc.
+                line_type=cv2.LINE_8,
             )
             if self.glow
             else None
@@ -161,11 +166,13 @@ class Theme:
         palette: ColorPalette,
         thickness: int,
         accent: ColorPalette | None = None,
+        line_type: int = cv2.LINE_AA,
     ):
         common: dict[str, Any] = {
             "color": palette,
             "thickness": thickness,
             "color_lookup": self.color_lookup,
+            "line_type": line_type,
         }
 
         if self.box_style == "round":

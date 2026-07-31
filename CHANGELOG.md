@@ -4,6 +4,16 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
 ## Yayınlanmamış
 
+### Hızlandı
+- `neon` teması 7,1 ms/kare yerine 4,1 ms (1280x720, 8 kutu). Hâle geçişinde kenar
+  yumuşatma kapatıldı: yay çizimi düz çizgiye göre dört kat pahalı, ama hâle sönük
+  ve ana çizginin altında kaldığı için fark gözle görünmüyor (belirgin farklı
+  piksel %0,4).
+
+### Eklendi
+- `tools/benchmark.py` — tema başına kare süresi, elle yazılmış OpenCV döngüsüne
+  göre ek yük ve tema kurulum maliyeti. Ölçüm README'deki tabloyu üretiyor.
+
 ### Değişti
 - Playground'daki kamera önizlemesi kaldırıldı. Tarayıcıda tespit çalışmadığı
   için kutular sahte kalıyordu; ayarları görmeye bir katkısı yoktu, kamera izni

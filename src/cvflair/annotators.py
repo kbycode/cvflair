@@ -73,6 +73,7 @@ def _rounded_outline(
     radius: int,
     colour: tuple[int, int, int],
     thickness: int,
+    line_type: int = cv2.LINE_AA,
 ) -> None:
     x1, y1, x2, y2 = box
     radius = int(min(radius, (x2 - x1) / 2, (y2 - y1) / 2))
@@ -93,7 +94,7 @@ def _rounded_outline(
     ):
         cv2.ellipse(
             scene, centre, (radius, radius), 0, start_angle, start_angle + 90,
-            colour, thickness, cv2.LINE_AA,
+            colour, thickness, line_type,
         )
 
 
@@ -139,11 +140,16 @@ class _OutlineAnnotator:
         thickness: int = 2,
         color_lookup: ColorLookup = ColorLookup.CLASS,
         accent_color: Any = None,
+        line_type: int = cv2.LINE_AA,
     ) -> None:
         self.color = resolve_palette(color if color is not None else ColorPalette.DEFAULT)
         self.thickness = max(1, int(thickness))
         self.color_lookup = color_lookup
         self.accent_color = None if accent_color is None else resolve_palette(accent_color)
+        #: Line type for curves. Anti-aliasing costs about four times as much
+        #: per arc and is invisible on the dimmed glow pass, so :class:`cvflair.Theme`
+        #: hands ``cv2.LINE_8`` to that one.
+        self.line_type = line_type
 
     def annotate(self, scene: np.ndarray, detections: Any) -> np.ndarray:
         for index in range(len(detections)):
@@ -186,7 +192,9 @@ class RoundBoxAnnotator(_OutlineAnnotator):
 
     def draw(self, scene, box, colour, accent) -> None:
         short_side = min(box[2] - box[0], box[3] - box[1])
-        _rounded_outline(scene, box, int(self.roundness * short_side / 2), colour, self.thickness)
+        _rounded_outline(
+            scene, box, int(self.roundness * short_side / 2), colour, self.thickness, self.line_type
+        )
 
 
 class BoxCornerAnnotator(_OutlineAnnotator):
@@ -273,7 +281,7 @@ class BracketBoxAnnotator(_OutlineAnnotator):
             cx, cy = box[ix], box[iy]
             cv2.ellipse(
                 scene, (cx + dx * radius, cy + dy * radius), (radius, radius), 0,
-                start_angle, start_angle + 90, accent, self.thickness, cv2.LINE_AA,
+                start_angle, start_angle + 90, accent, self.thickness, self.line_type,
             )
             cv2.line(scene, (cx + dx * radius, cy), (cx + dx * arm, cy), colour, self.thickness)
             cv2.line(scene, (cx, cy + dy * radius), (cx, cy + dy * arm), colour, self.thickness)

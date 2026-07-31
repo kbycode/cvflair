@@ -56,7 +56,11 @@ Temayı önce tarayıcıda denemek en hızlısı:
 ```bash
 python tools/make_demo_gif.py     # docs/demo.gif
 python tools/make_style_sheet.py  # docs/box-styles.png + docs/theme-*.png
+python tools/benchmark.py         # README'deki performans tablosu
 ```
+
+Çizim maliyetini değiştiren bir değişiklik yaptıysan `benchmark.py` çıktısını
+öncesi/sonrası olarak PR'a ekle — tablo oradan güncelleniyor.
 
 Kaynak görsel `docs/city.png`; kutu oranları iki araçta ortak.
 

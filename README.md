@@ -242,12 +242,33 @@ python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye �
   (`frames_dropped` ile sayılır). Böylece işleme yavaşladığında gecikme birikmez;
   ekranda hep en güncel kare olur.
 - **Annotator'lar bir kere kurulur.** `Theme` nesnesi oluşturulurken çizim
-  nesneleri hazırlanır ve her karede yeniden kullanılır — döngü içinde annotator
-  kurmak bu tür işlerde en sık görülen gereksiz maliyettir.
+  nesneleri hazırlanır ve her karede yeniden kullanılır. Ölçüldüğünde kurulum
+  0,02–0,10 ms; döngü içinde tema kurmak çizim süresine %1–8 ekliyor — gerçek
+  ama küçük bir maliyet.
 - **Bağımlılık yüzeyi kasten dar.** Yalnızca numpy ve opencv. `import cvflair`
   ~0.3 saniye sürüyor; kurulum ~170 MB (neredeyse tamamı opencv + numpy).
 - **Model paketin dışında.** `stream(model=...)` verilen şeyi bir çağrılabilire çevirir;
   ağırlıklar ilk yinelemede yüklenir. Hiçbir model kodu veya ağırlığı pakete gömülü değil.
+
+### Ne kadar sürüyor
+
+1280x720, 8 kutu, `tools/benchmark.py` (i5-3xxx, OpenCV 5.0). Sayılar makineye
+özgü; oranlar aynı koşuda anlamlı.
+
+| Tema | ms/kare | 30 fps bütçesinin |
+|---|---|---|
+| `minimal` | 0,35 | %1 |
+| `hud` | 0,51 | %2 |
+| `cyberpunk` | 0,64 | %2 |
+| `pastel` | 2,8 | %8 |
+| `neon` | 4,1 | %12 |
+
+Karşılaştırma tabanı, elle yazılmış bir OpenCV kutu+etiket döngüsü: 0,34 ms.
+`minimal` onunla aynı hızda; aradaki fark tamamen çizilen şeyden geliyor.
+Pahalı olan yuvarlak köşe: kenar yumuşatmalı yay, düz çizgiye göre dört kat
+maliyetli ve her kutuda dört tane var. `neon` bunun üstüne bir de hâle geçişi
+ekliyor. Hâle sönük ve ana çizginin altında kaldığı için orada kenar yumuşatma
+kapalı — bu tek değişiklik `neon`'u 7,1 ms'den 4,1 ms'ye indirdi.
 
 ## Geliştirme
 
@@ -269,8 +290,9 @@ Testler kamera gerektirmez: `Camera`'ya `capture_factory` üzerinden sahte bir
 Dokümantasyon görselleri de kamerasız üretilir:
 
 ```bash
-python tools/make_demo_gif.py    # docs/demo.gif
-python examples/theme_preview.py # examples/output/theme-*.png
+python tools/make_demo_gif.py     # docs/demo.gif
+python tools/make_style_sheet.py  # docs/box-styles.png + docs/theme-*.png
+python tools/benchmark.py         # yukarıdaki tabloyu üretir
 ```
 
 ## Lisans

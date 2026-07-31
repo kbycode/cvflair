@@ -1,0 +1,118 @@
+"""
+Çizim maliyetini ölçer: tema başına kare süresi, elle yazılmış OpenCV döngüsüne
+göre ek yük, ve annotator'ları döngü içinde kurmanın bedeli.
+
+Çalıştırmak için:
+    python tools/benchmark.py
+    python tools/benchmark.py --width 1920 --height 1080 --boxes 20 --repeat 300
+
+Sayılar makineye özgüdür; karşılaştırma aynı koşuda anlamlıdır.
+"""
+
+from __future__ import annotations
+
+import argparse
+import platform
+import statistics
+import time
+from collections.abc import Callable
+
+import cv2
+import numpy as np
+
+from cvflair import Detections, Theme, available_themes, get_theme
+
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
+
+def make_frame(width: int, height: int) -> np.ndarray:
+    column = np.linspace(30, 90, width, dtype=np.uint8)
+    return np.repeat(column[None, :, None], height, axis=0).repeat(3, axis=2).copy()
+
+
+def make_detections(count: int, width: int, height: int) -> Detections:
+    rng = np.random.default_rng(0)
+    boxes = []
+    for _ in range(count):
+        box_width = rng.integers(width // 12, width // 5)
+        box_height = rng.integers(height // 10, height // 3)
+        x1 = rng.integers(0, width - box_width)
+        y1 = rng.integers(0, height - box_height)
+        boxes.append([x1, y1, x1 + box_width, y1 + box_height])
+
+    return Detections(
+        xyxy=np.array(boxes, dtype=np.float32),
+        class_id=rng.integers(0, 4, size=count),
+        confidence=rng.uniform(0.5, 0.99, size=count).astype(np.float32),
+        names=np.array(["nesne"] * count, dtype=object),
+    )
+
+
+def bare_opencv(frame: np.ndarray, detections: Detections, labels: list[str]) -> None:
+    """Kütüphanesiz karşılaştırma tabanı: kutu + etiket, elle."""
+    for index in range(len(detections)):
+        x1, y1, x2, y2 = detections.xyxy[index].astype(int)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        (text_width, text_height), _ = cv2.getTextSize(labels[index], FONT, 0.5, 1)
+        plate = (x1 + text_width + 12, y1)
+        cv2.rectangle(frame, (x1, y1 - text_height - 12), plate, (0, 255, 0), -1)
+        cv2.putText(frame, labels[index], (x1 + 6, y1 - 6), FONT, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+
+
+def measure(work: Callable[[], None], repeat: int) -> tuple[float, float]:
+    """Ortanca ve en iyi kare süresini milisaniye olarak döndürür."""
+    for _ in range(5):  # ısınma: ilk çağrılar önbellek ve tahsis maliyeti taşıyor
+        work()
+
+    samples = []
+    for _ in range(repeat):
+        start = time.perf_counter()
+        work()
+        samples.append((time.perf_counter() - start) * 1000)
+    return statistics.median(samples), min(samples)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--width", type=int, default=1280)
+    parser.add_argument("--height", type=int, default=720)
+    parser.add_argument("--boxes", type=int, default=8)
+    parser.add_argument("--repeat", type=int, default=200)
+    args = parser.parse_args()
+
+    frame = make_frame(args.width, args.height)
+    detections = make_detections(args.boxes, args.width, args.height)
+    labels = [f"nesne {score:.2f}" for score in detections.confidence]
+
+    print(f"{platform.python_implementation()} {platform.python_version()} | "
+          f"OpenCV {cv2.__version__} | {platform.processor() or platform.machine()}")
+    print(f"{args.width}x{args.height}, {args.boxes} kutu, {args.repeat} tekrar\n")
+
+    baseline, _ = measure(lambda: bare_opencv(frame, detections, labels), args.repeat)
+    print("| Tema | ms/kare | kare/sn | elle çizime göre |")
+    print("|---|---|---|---|")
+    print(f"| _elle OpenCV_ | {baseline:.2f} | {1000 / baseline:.0f} | — |")
+
+    def draw_with(theme: Theme) -> Callable[[], None]:
+        return lambda: theme.annotate(frame, detections, labels=labels)
+
+    for name in available_themes():
+        median, _ = measure(draw_with(get_theme(name)), args.repeat)
+        overhead = (median - baseline) / baseline * 100
+        print(f"| `{name}` | {median:.2f} | {1000 / median:.0f} | {overhead:+.0f}% |")
+
+    # Tema kurulumunun kendi maliyeti: annotator'lar burada hazırlanıyor. Döngü
+    # içinde tema kurmak bu süreyi her kareye ekler.
+    def build_theme(name: str) -> Callable[[], None]:
+        return lambda: get_theme(name)
+
+    print("\n| Tema | kurulum ms | döngü içinde kurulursa çizime eklenen |")
+    print("|---|---|---|")
+    for name in available_themes():
+        build, _ = measure(build_theme(name), args.repeat)
+        draw, _ = measure(draw_with(get_theme(name)), args.repeat)
+        print(f"| `{name}` | {build:.3f} | {build / draw * 100:+.0f}% |")
+
+
+if __name__ == "__main__":
+    main()
