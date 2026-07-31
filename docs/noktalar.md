@@ -4,6 +4,8 @@ Kutular bir aile, eklemler diğeri. cvflair poz tahmini **yapmaz** — noktalar
 senin çalıştırdığın modelden gelir (MediaPipe, YOLO-pose, OpenPose); burada olan
 şey taşıyıcı ve indeksler arası bağlantı.
 
+![iskeletler](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/skeletons.png)
+
 ```python
 from cvflair import HAND_21, Camera, KeyPoints
 
