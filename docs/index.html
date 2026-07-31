@@ -106,8 +106,10 @@
   .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .switch input { accent-color: var(--accent); width: 16px; height: 16px; }
 
-  .swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .swatch { position: relative; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+  .swatch { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .swatch small { font-size: 11px; color: var(--muted); max-width: 52px; overflow: hidden; text-overflow: ellipsis; }
+  .swatch small.unused { opacity: .45; }
   .swatch button {
     position: absolute; top: -7px; right: -7px;
     width: 17px; height: 17px; padding: 0;
@@ -177,6 +179,7 @@
       <div class="row">
         <label class="title" data-i18n="field.palette"></label>
         <div class="swatches" id="swatches"></div>
+        <p class="hint" data-i18n="palette.hint"></p>
       </div>
     </div>
 
@@ -453,6 +456,9 @@ const I18N = {
     "status.code": "Code copied.",
     "status.link": "Link copied.",
     "status.copyFailed": "Could not copy — select the text by hand.",
+    "palette.hint": "Colours are handed out in class order — the names below the swatches are the objects in the preview. Extra colours wait for further classes; when the palette runs out it starts over.",
+    "swatch.mapped": "This colour is used for that object in the preview.",
+    "swatch.spare": "No object in the preview uses this colour yet.",
     "swatch.remove": "Remove colour",
     "swatch.add": "+ colour",
     "swatch.label": "colour",
@@ -515,6 +521,9 @@ const I18N = {
     "status.code": "Kod kopyalandı.",
     "status.link": "Bağlantı kopyalandı.",
     "status.copyFailed": "Kopyalanamadı — metni elle seçmek gerekiyor.",
+    "palette.hint": "Renkler sınıf sırasına göre dağıtılıyor — kutuların altındaki adlar önizlemedeki nesneler. Fazla renkler sonraki sınıfları bekler; palet biterse başa döner.",
+    "swatch.mapped": "Bu renk önizlemede o nesne için kullanılıyor.",
+    "swatch.spare": "Önizlemede bu rengi kullanan nesne yok.",
     "swatch.remove": "Rengi kaldır",
     "swatch.add": "+ renk",
     "swatch.label": "renk",
@@ -1340,6 +1349,16 @@ function renderSwatches() {
       remove.addEventListener("click", () => update(() => { state.palette.splice(index, 1); }));
       wrap.append(remove);
     }
+
+    // Hangi rengin neye gittiği yazılı olmazsa palet sadece renk yığını gibi
+    // duruyor; sahnedeki üç nesnenin adı doğrudan altına konuyor.
+    const caption = document.createElement("small");
+    const actor = ACTORS[index];
+    caption.textContent = actor ? actor.label : String(index + 1);
+    if (!actor) caption.className = "unused";
+    caption.title = actor ? t("swatch.mapped") : t("swatch.spare");
+    wrap.append(caption);
+
     holder.append(wrap);
   });
 

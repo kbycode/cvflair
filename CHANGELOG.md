@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.7.0
 
 ### Hızlandı
 - `neon` teması 7,1 ms/kare yerine 4,1 ms (1280x720, 8 kutu). Hâle geçişinde kenar
@@ -15,6 +15,9 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
   göre ek yük ve tema kurulum maliyeti. Ölçüm README'deki tabloyu üretiyor.
 
 ### Değişti
+- Playground'daki renk paleti artık hangi rengin neye gittiğini gösteriyor: her renk
+  kutusunun altında önizlemedeki nesnenin adı, kullanılmayanlar soluk, altında da
+  dağıtım kuralı yazıyor.
 - Playground'daki kamera önizlemesi kaldırıldı. Tarayıcıda tespit çalışmadığı
   için kutular sahte kalıyordu; ayarları görmeye bir katkısı yoktu, kamera izni
   istemesi ise gereksizdi.
