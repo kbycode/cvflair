@@ -144,36 +144,59 @@ FIGURE_DARK = (136, 116, 108)
 
 
 def draw_subject(frame: np.ndarray, points: np.ndarray, edges, weight: int) -> None:
-    """İskeletin altına aynı geometriden kalın bir kütle çizer."""
+    """
+    İskeletin altına aynı geometriden kalın bir kütle çizer.
+
+    OpenCV çizgileri düz uçlu; eklemlere daire konmazsa parmak uçları ve dirsekler
+    köşeli kalıyor, kütle çizim gibi değil şema gibi görünüyor.
+    """
     for first, second in edges:
         cv2.line(
             frame, tuple(points[first].astype(int)), tuple(points[second].astype(int)),
             FIGURE, weight, cv2.LINE_AA,
         )
+    for point in points:
+        cv2.circle(frame, tuple(point.astype(int)), weight // 2, FIGURE, -1, cv2.LINE_AA)
 
 
-def fill_polygon(frame: np.ndarray, points: np.ndarray, indices) -> None:
-    cv2.fillPoly(frame, [points[list(indices)].astype(np.int32)], FIGURE, cv2.LINE_AA)
+def fill_blob(frame: np.ndarray, points: np.ndarray, indices, weight: int) -> None:
+    """Verilen noktaların dışbükey örtüsünü kalın konturla doldurur: köşeler yuvarlanır."""
+    hull = cv2.convexHull(points[list(indices)].astype(np.int32))
+    cv2.fillPoly(frame, [hull], FIGURE, cv2.LINE_AA)
+    cv2.polylines(frame, [hull], True, FIGURE, weight, cv2.LINE_AA)
+    for point in hull.reshape(-1, 2):
+        cv2.circle(frame, tuple(point), weight // 2, FIGURE, -1, cv2.LINE_AA)
+
+
+#: Baş ölçüleri göz aralığının katı olarak. İnsan yüzünde gözler arası mesafe
+#: kafa genişliğinin kabaca yarısı; daha dar tutulunca gözler kulaklara,
+#: ağız da çenenin altına düşüyor.
+HEAD_WIDTH = 1.15
+HEAD_HEIGHT = 1.45
+HEAD_DROP = 0.12       # göz çizgisi kafa merkezinin biraz üstünde
+SHOULDER_DROP = 2.2
 
 
 def draw_face_subject(frame: np.ndarray, points: np.ndarray) -> None:
     """Baş ve omuz: beş nokta tek başına yüz olduğunu anlatmıyor."""
-    left, right, nose = points[0], points[1], points[2]
+    left, right = points[0], points[1]
     span = float(np.hypot(*(right - left)))
     angle = float(np.degrees(np.arctan2(right[1] - left[1], right[0] - left[0])))
-    center = tuple(np.mean([left, right, nose], axis=0).astype(int))
 
     along = np.array([np.cos(np.radians(angle)), np.sin(np.radians(angle))])
     down = np.array([-along[1], along[0]])
-    # Omuz başın altına iniyor: merkeze çizilirse başın arkasında kalıp görünmüyor.
-    shoulder = tuple((np.array(center) + down * span * 1.45).astype(int))
-    cv2.ellipse(frame, shoulder, (int(span * 1.0), int(span * 0.45)),
+    eyes = (left + right) / 2
+    center = eyes + down * span * HEAD_DROP
+
+    shoulder = tuple((eyes + down * span * SHOULDER_DROP).astype(int))
+    cv2.ellipse(frame, shoulder, (int(span * 1.8), int(span * 0.8)),
                 angle, 180, 360, FIGURE_DARK, -1, cv2.LINE_AA)
     for side in (-1, 1):
-        offset = along * side * span * 0.62
-        cv2.ellipse(frame, tuple((np.array(center) + offset).astype(int)),
-                    (int(span * 0.13), int(span * 0.2)), angle, 0, 360, FIGURE, -1, cv2.LINE_AA)
-    cv2.ellipse(frame, center, (int(span * 0.62), int(span * 0.82)),
+        ear = tuple((center + along * side * span * HEAD_WIDTH).astype(int))
+        cv2.ellipse(frame, ear, (int(span * 0.16), int(span * 0.28)),
+                    angle, 0, 360, FIGURE, -1, cv2.LINE_AA)
+    cv2.ellipse(frame, tuple(center.astype(int)),
+                (int(span * HEAD_WIDTH), int(span * HEAD_HEIGHT)),
                 angle, 0, 360, FIGURE, -1, cv2.LINE_AA)
 
 
@@ -185,13 +208,13 @@ def skeleton_cell(theme_name: str) -> np.ndarray:
     theme = get_theme(theme_name)
     hand = hand_points(78, 232)
     pose = pose_points(206, 205)
-    face = face_points(315, 140, 100)
+    face = face_points(312, 128, 62)
 
     # Siluetler önce: çizim bir gövdenin üstünde dursun, boşlukta kalmasın.
     draw_subject(frame, hand, HAND_21, 15)
-    fill_polygon(frame, hand, (0, 5, 9, 13, 17))
+    fill_blob(frame, hand, (0, 1, 5, 9, 13, 17), 15)
     draw_subject(frame, pose, POSE_17, 17)
-    fill_polygon(frame, pose, (5, 6, 12, 11))
+    fill_blob(frame, pose, (5, 6, 12, 11), 17)
     cv2.circle(frame, tuple(pose[0].astype(int)),
                int(np.hypot(*(pose[5] - pose[6])) * 0.42), FIGURE, -1, cv2.LINE_AA)
     draw_face_subject(frame, face)
