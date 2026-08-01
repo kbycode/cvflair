@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.10.0 — 2026-08-01
 
 ### Eklendi
 - **Etiket çakışması çözülüyor.** Kutular üst üste bindiğinde plakalar birbirini
