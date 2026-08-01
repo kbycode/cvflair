@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.14.0 — 2026-08-01
 
 ### Eklendi
 - **Oval gizleme.** `BlurAnnotator(shape="ellipse")` ve `Theme(hide_shape=...)`
