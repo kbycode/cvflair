@@ -5,14 +5,14 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 ## Yayınlanmamış
 
 ### Eklendi
-- **Tema dosyası.** `theme.save("tema.json")` ve `get_theme("tema.json")` —
+- **Tema dosyası.** `theme.save("theme.json")` ve `get_theme("theme.json")` —
   `--theme` de artık hazır bir ad ya da bir `.json` yolu alıyor. Dosyaya
   yalnızca varsayılandan farklı ayarlar yazılıyor, yani paylaşılan dosya neyin
   seçildiğini anlatıyor. `Theme.to_dict()` / `Theme.from_dict()` aynı biçimi
   sözlük olarak veriyor; `get_theme` sözlüğü de kabul ediyor.
 - **Playground'da komut satırı.** Üretilen Python kodunun altında aynı görünümü
   veren `cvflair` komutu duruyor. Hazır bir temada `--theme neon` yetiyor; özel
-  görünüm bir bayrağa sığmadığı için **tema.json indir** düğmesi dosyayı
+  görünüm bir bayrağa sığmadığı için **theme.json indir** düğmesi dosyayı
   üretiyor ve komut onu kullanıyor.
 
 ### Depo

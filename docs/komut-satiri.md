@@ -52,10 +52,10 @@ gibi geçirir.
 
 `--theme` hazır bir tema adı ya da bir `.json` dosyası alır. Playground'da
 ayarladığın görünüm bayrağa sığmadığı için dosyayla taşınır: sayfadaki
-**tema.json indir** düğmesi tam bunun için.
+**theme.json indir** düğmesi tam bunun için.
 
 ```bash
-cvflair 0 --theme tema.json --model yolov8n.pt
+cvflair 0 --theme theme.json --model yolov8n.pt
 ```
 
 Aynı dosya Python'dan da okunur ve yazılır:
@@ -63,8 +63,8 @@ Aynı dosya Python'dan da okunur ve yazılır:
 ```python
 from cvflair import Theme, get_theme
 
-Theme(box_style="sketch", palette=["#39FF14"], glow=True).save("tema.json")
-theme = get_theme("tema.json")
+Theme(box_style="sketch", palette=["#39FF14"], glow=True).save("theme.json")
+theme = get_theme("theme.json")
 ```
 
 Dosyaya yalnızca varsayılandan farklı ayarlar yazılır, yani paylaşılan dosya

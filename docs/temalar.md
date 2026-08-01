@@ -172,11 +172,11 @@ Yeni bir tema eklemek (depoya katkı olarak):
 Bir temayı paylaşmak ya da depoya koymak için JSON olarak yazılabilir:
 
 ```python
-theme.save("tema.json")
-theme = get_theme("tema.json")      # ya da Theme.load("tema.json")
+theme.save("theme.json")
+theme = get_theme("theme.json")      # ya da Theme.load("theme.json")
 ```
 
 Yalnızca varsayılandan farklı ayarlar yazılır. Aynı dosya komut satırında da
-geçerlidir: `cvflair 0 --theme tema.json --model yolov8n.pt`. Playground'daki
-**tema.json indir** düğmesi bu dosyayı üretir, yani ekranda ayarladığın görünüm
+geçerlidir: `cvflair 0 --theme theme.json --model yolov8n.pt`. Playground'daki
+**theme.json indir** düğmesi bu dosyayı üretir, yani ekranda ayarladığın görünüm
 doğrudan komut satırına taşınabilir.

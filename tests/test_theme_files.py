@@ -83,23 +83,23 @@ def test_unknown_field_is_named():
 
 
 def test_save_then_load(tmp_path):
-    path = custom().save(tmp_path / "tema.json")
+    path = custom().save(tmp_path / "theme.json")
 
     assert path.exists()
     assert Theme.load(path).to_dict() == custom().to_dict()
 
 
 def test_saved_file_is_readable_json(tmp_path):
-    custom().save(tmp_path / "tema.json")
+    custom().save(tmp_path / "theme.json")
 
-    data = json.loads((tmp_path / "tema.json").read_text(encoding="utf-8"))
+    data = json.loads((tmp_path / "theme.json").read_text(encoding="utf-8"))
     assert data["box_style"] == "sketch"
 
 
 def test_missing_folder_is_created(tmp_path):
-    custom().save(tmp_path / "yeni" / "tema.json")
+    custom().save(tmp_path / "yeni" / "theme.json")
 
-    assert (tmp_path / "yeni" / "tema.json").exists()
+    assert (tmp_path / "yeni" / "theme.json").exists()
 
 
 def test_broken_json_says_which_file(tmp_path):
@@ -122,9 +122,9 @@ def test_json_holding_a_list_is_refused(tmp_path):
 
 
 def test_get_theme_reads_a_json_path(tmp_path):
-    custom().save(tmp_path / "tema.json")
+    custom().save(tmp_path / "theme.json")
 
-    theme = get_theme(str(tmp_path / "tema.json"))
+    theme = get_theme(str(tmp_path / "theme.json"))
 
     assert theme.name == "playground" and theme.box_style == "sketch"
 
@@ -146,10 +146,10 @@ def test_preset_names_are_not_treated_as_paths():
 
 
 def test_each_call_builds_a_fresh_theme(tmp_path):
-    custom().save(tmp_path / "tema.json")
+    custom().save(tmp_path / "theme.json")
 
-    first = get_theme(str(tmp_path / "tema.json"))
-    second = get_theme(str(tmp_path / "tema.json"))
+    first = get_theme(str(tmp_path / "theme.json"))
+    second = get_theme(str(tmp_path / "theme.json"))
 
     assert first is not second, "iki kamera aynı annotator'ları paylaşmamalı"
 

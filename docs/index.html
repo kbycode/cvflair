@@ -480,11 +480,11 @@ const I18N = {
     "section.code": "Python code",
     "section.shell": "Command line",
     "shell.preset": "The package ships a command. Camera index, a video file, an image or a folder of images all work as the source.",
-    "shell.custom": "A custom look cannot fit in a flag, so it travels as a file: download tema.json next to where you run the command.",
+    "shell.custom": "A custom look cannot fit in a flag, so it travels as a file: download theme.json next to where you run the command.",
     "button.copyShell": "Copy command",
-    "button.themeFile": "Download tema.json",
+    "button.themeFile": "Download theme.json",
     "status.shell": "Command copied.",
-    "status.themeFile": "tema.json downloaded.",
+    "status.themeFile": "theme.json downloaded.",
     "preset.custom": "custom",
     "field.palette": "Colour palette",
     "field.style": "Style",
@@ -569,11 +569,11 @@ const I18N = {
     "section.code": "Python kodu",
     "section.shell": "Komut satırı",
     "shell.preset": "Paketle birlikte bir komut geliyor. Kaynak olarak kamera numarası, video dosyası, görsel ya da görsel klasörü verilebilir.",
-    "shell.custom": "Özel görünüm bir bayrağa sığmıyor, dosyayla taşınıyor: tema.json'u komutu çalıştıracağın yere indir.",
+    "shell.custom": "Özel görünüm bir bayrağa sığmıyor, dosyayla taşınıyor: theme.json'u komutu çalıştıracağın yere indir.",
     "button.copyShell": "Komutu kopyala",
-    "button.themeFile": "tema.json indir",
+    "button.themeFile": "theme.json indir",
     "status.shell": "Komut kopyalandı.",
-    "status.themeFile": "tema.json indirildi.",
+    "status.themeFile": "theme.json indirildi.",
     "preset.custom": "özel",
     "field.palette": "Renk paleti",
     "field.style": "Biçim",
@@ -1049,7 +1049,7 @@ function shellCommand() {
   const model = state.preview === "skeleton" ? "yolov8n-pose.pt" : "yolov8n.pt";
   // Hazır bir temanın üstünde hiçbir değişiklik yoksa adı yeter; aksi halde
   // ekrandaki görünümü ancak tema dosyası taşır.
-  const theme = preset === "custom" ? "tema.json" : preset;
+  const theme = preset === "custom" ? "theme.json" : preset;
   return "cvflair 0 --theme " + theme + " --model " + model;
 }
 
@@ -1882,7 +1882,7 @@ function bindControls() {
 
   document.getElementById("downloadPng").addEventListener("click", () => {
     const link = document.createElement("a");
-    link.download = "cvflair-tema.png";
+    link.download = "cvflair-theme.png";
     link.href = canvas.toDataURL("image/png");
     link.click();
   });
@@ -1891,7 +1891,7 @@ function bindControls() {
     copy(shellCommand(), t("status.shell"));
   });
   document.getElementById("downloadTheme").addEventListener("click", () => {
-    download(new Blob([themeJson()], { type: "application/json" }), "tema.json");
+    download(new Blob([themeJson()], { type: "application/json" }), "theme.json");
     setStatus(t("status.themeFile"));
   });
   document.getElementById("copyCode").addEventListener("click", () => {
