@@ -91,6 +91,70 @@ class Detections:
         )
 
     @classmethod
+    def from_xywh(
+        cls,
+        boxes: Any,
+        width: int | None = None,
+        height: int | None = None,
+        **fields: Any,
+    ) -> Detections:
+        """
+        Read ``[x, y, w, h]`` boxes, the shape most face and cascade detectors
+        return.
+
+        OpenCV's ``detectMultiScale`` and MediaPipe both report a corner plus a
+        size rather than two corners::
+
+            faces = cascade.detectMultiScale(gray)
+            detections = Detections.from_xywh(faces)
+
+        Pass ``width`` and ``height`` when the model reports 0-1 coordinates
+        relative to the frame, as MediaPipe does; the scaling happens here.
+        """
+        values = np.asarray(boxes, dtype=np.float32).reshape(-1, 4)
+        if (width is None) != (height is None):
+            raise ValueError("width and height go together; give both or neither.")
+        if width is not None and height is not None:
+            values = values * np.array([width, height, width, height], dtype=np.float32)
+
+        xyxy = np.column_stack(
+            [values[:, 0], values[:, 1], values[:, 0] + values[:, 2], values[:, 1] + values[:, 3]]
+        )
+        return cls(xyxy=xyxy, **fields)
+
+    @classmethod
+    def from_mediapipe(cls, result: Any, width: int, height: int) -> Detections:
+        """
+        Read a MediaPipe face or object detection result.
+
+        Both API generations are accepted. The legacy ``solutions`` result
+        reports a relative box under ``location_data``; the Tasks API reports
+        pixels under ``bounding_box``. MediaPipe is not imported here -- the
+        fields are read by name.
+
+        Key points are not carried over: they are a different family and go
+        through :meth:`~cvflair.keypoints.KeyPoints.from_mediapipe`.
+        """
+        found = getattr(result, "detections", result)
+        if not found:
+            return cls.empty()
+
+        boxes, scores = [], []
+        for detection in found:
+            box, score = _mediapipe_box(detection, width, height)
+            boxes.append(box)
+            scores.append(score)
+
+        return cls(
+            xyxy=np.array(boxes, dtype=np.float32),
+            confidence=(
+                np.array(scores, dtype=np.float32)
+                if all(score is not None for score in scores)
+                else None
+            ),
+        )
+
+    @classmethod
     def from_ultralytics(cls, result: Any) -> Detections:
         """
         Read one Ultralytics ``Results`` object.
@@ -122,6 +186,28 @@ class Detections:
 
     def __repr__(self) -> str:
         return f"Detections({len(self)} boxes)"
+
+
+def _mediapipe_box(detection: Any, width: int, height: int) -> tuple[list[float], float | None]:
+    """Tek bir MediaPipe tespitinden köşeleri ve güveni çıkarır."""
+    relative = getattr(getattr(detection, "location_data", None), "relative_bounding_box", None)
+    if relative is not None:  # solutions API'si: kare oranında
+        left, top = relative.xmin * width, relative.ymin * height
+        box = [left, top, left + relative.width * width, top + relative.height * height]
+        score = getattr(detection, "score", None)
+        return box, float(score[0]) if score is not None and len(score) else None
+
+    pixels = getattr(detection, "bounding_box", None)
+    if pixels is not None:  # tasks API'si: piksel
+        left, top = float(pixels.origin_x), float(pixels.origin_y)
+        box = [left, top, left + float(pixels.width), top + float(pixels.height)]
+        categories = getattr(detection, "categories", None)
+        return box, float(categories[0].score) if categories else None
+
+    raise TypeError(
+        f"MediaPipe tespiti tanınmadı: {type(detection).__name__}. Beklenen, "
+        "location_data ya da bounding_box taşıyan bir tespit."
+    )
 
 
 def _to_numpy(value: Any) -> np.ndarray:

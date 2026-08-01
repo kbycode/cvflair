@@ -2,6 +2,27 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **`Detections.from_xywh(...)`** — köşe ve boyut veren kutuları okur. OpenCV
+  cascade'leri ve MediaPipe kutuyu böyle bildiriyor; dönüşüm herkesin kendi
+  yazdığı satırdı. Model 0-1 aralığında veriyorsa kare boyutu geçilerek
+  ölçekleniyor.
+- **`Detections.from_mediapipe(sonuc, genislik, yukseklik)`** — MediaPipe'ın yüz
+  ve nesne tespitini okur. Eski `solutions` sonucu oranlı kutu, yeni `tasks`
+  sonucu piksel veriyor; ikisi de tanınıyor. MediaPipe import edilmiyor.
+- **`FACE_5` iskeleti** — yüz modellerinin ortak beş noktası (iki göz, burun,
+  iki ağız köşesi). InsightFace'in `kps` alanı, RetinaFace ve MediaPipe aynı
+  sırayı kullanıyor. `skeleton="face"` ile de çağrılıyor; gözler arasına çizgi
+  çekilmiyor, yüzü ortadan bölüyor.
+- Playground'un iskelet önizlemesine yüz eklendi; belgelerdeki iskelet görseli de
+  üç topolojiyi gösteriyor.
+
+### Değişti
+- İskelet listesine bağlı iki test artık listeyi sabit saymıyor; yeni bir
+  topoloji eklenince kendiliğinden kapsıyor.
+
 ## 0.12.0 — 2026-08-01
 
 ### Eklendi

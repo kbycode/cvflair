@@ -22,6 +22,7 @@ __all__ = [
     "Skeleton",
     "HAND_21",
     "POSE_17",
+    "FACE_5",
     "SKELETONS",
     "is_keypoints",
     "resolve_skeleton",
@@ -51,8 +52,17 @@ POSE_17: Skeleton = (
     (11, 13), (13, 15), (12, 14), (14, 16),    # legs
 )
 
+#: The five points face detectors agree on: 0 left eye, 1 right eye, 2 nose,
+#: 3 left mouth corner, 4 right mouth corner. InsightFace's ``kps``, RetinaFace
+#: and MediaPipe Face Detection all use this order.
+FACE_5: Skeleton = (
+    (0, 2), (1, 2),    # eyes to nose
+    (2, 3), (2, 4),    # nose to mouth corners
+    (3, 4),            # mouth
+)
+
 #: Lookup by name, for ``cam.show(..., skeleton="hand")``.
-SKELETONS: dict[str, Skeleton] = {"hand": HAND_21, "pose": POSE_17}
+SKELETONS: dict[str, Skeleton] = {"hand": HAND_21, "pose": POSE_17, "face": FACE_5}
 
 
 @dataclass

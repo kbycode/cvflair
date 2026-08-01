@@ -74,8 +74,10 @@ edilir.
 | Üye | Ne yapar |
 |---|---|
 | `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı — bkz. [modeller](modeller.md) |
+| `Detections.from_xywh(kutular, genislik, yukseklik)` | Köşe+boyut kutuları; oranlıysa kare boyutuyla ölçekler |
+| `Detections.from_mediapipe(sonuc, genislik, yukseklik)` | MediaPipe yüz/nesne tespiti; iki API sürümü de |
 | `KeyPoints(xy, confidence, class_id)` | Nokta taşıyıcısı; `from_normalized` ve `from_mediapipe` yardımcılarıyla |
-| `HAND_21` / `POSE_17` / `SKELETONS` | Hazır iskelet topolojileri |
+| `HAND_21` / `POSE_17` / `FACE_5` / `SKELETONS` | Hazır iskelet topolojileri (`"hand"`, `"pose"`, `"face"`) |
 | `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir |
 | `load_ultralytics(weights, **kwargs)` | Ağırlık dosyasını yükler; extra eksikse açıklayıcı hata verir |
 | `resolve_detector(model)` | Ağırlık yolu / model / çağrılabilir → detektör; `stream()` bunu kullanır |

@@ -152,3 +152,37 @@ Bu kipte okuyucu tüketiciyi bekler, hiçbir kare atlanmaz.
 YOLO ağırlıkları veya Ultralytics kodu pakete gömülü değildir; `yolo` extra'sı
 bilinçli olarak isteğe bağlıdır. Ultralytics AGPL-3.0 lisanslıdır ve kullanılması
 hâlinde koşulları onu kuran projenin sorumluluğundadır.
+
+## Kutu biçimi: xyxy olmayan modeller
+
+cvflair kutuları `xyxy` okur. Yüz ve cascade modellerinin çoğu bunun yerine bir
+köşe ve bir boyut verir (`x, y, w, h`); dönüşüm `from_xywh` ile yapılır:
+
+```python
+faces = cascade.detectMultiScale(gray)          # OpenCV: (x, y, w, h)
+detections = Detections.from_xywh(faces)
+```
+
+Model 0-1 aralığında veriyorsa kare boyutu da geçilir:
+
+```python
+Detections.from_xywh(kutular, frame.shape[1], frame.shape[0])
+```
+
+MediaPipe'ın yüz ve nesne tespiti için ayrı bir okuyucu var; iki API sürümünü de
+tanır (eski `solutions` oranlı kutu verir, yeni `tasks` piksel):
+
+```python
+sonuc = detector.process(rgb)
+detections = Detections.from_mediapipe(sonuc, *frame.shape[1::-1])
+```
+
+| Model | Çıktısı | Yol |
+|---|---|---|
+| YOLO / Ultralytics | xyxy | `Detections.from_ultralytics(sonuc)` |
+| InsightFace | `face.bbox` xyxy | Doğrudan `Detections(...)` |
+| OpenCV cascade | `(x, y, w, h)` | `Detections.from_xywh(...)` |
+| MediaPipe | oranlı ya da piksel kutu | `Detections.from_mediapipe(...)` |
+
+Hiçbiri kurulu olmak zorunda değil: alanlar adlarıyla okunuyor, cvflair bu
+kütüphaneleri import etmiyor.

@@ -18,7 +18,16 @@ import cv2
 import numpy as np
 from make_demo_gif import BACKGROUND, DETECTIONS, fit_to_frame, frame_boxes
 
-from cvflair import HAND_21, POSE_17, Detections, KeyPoints, Theme, available_themes, get_theme
+from cvflair import (
+    FACE_5,
+    HAND_21,
+    POSE_17,
+    Detections,
+    KeyPoints,
+    Theme,
+    available_themes,
+    get_theme,
+)
 from cvflair.themes import BOX_STYLES
 
 DOCS = Path(__file__).resolve().parents[1] / "docs"
@@ -123,14 +132,21 @@ def pose_points(cx: float, cy: float) -> np.ndarray:
     ], dtype=np.float32)
 
 
+def face_points(cx: float, cy: float, scale: float) -> np.ndarray:
+    """Beş nokta, yüz modellerinin sırasıyla: göz, göz, burun, ağız, ağız."""
+    layout = ((-0.22, -0.20), (0.22, -0.20), (0.0, 0.02), (-0.16, 0.28), (0.16, 0.28))
+    return np.array([[cx + dx * scale, cy + dy * scale] for dx, dy in layout])
+
+
 def skeleton_cell(theme_name: str) -> np.ndarray:
     width, height = 380, 300
     column = np.linspace(26, 52, width, dtype=np.uint8)
     frame = np.repeat(column[None, :, None], height, axis=0).repeat(3, axis=2).copy()
 
     theme = get_theme(theme_name)
-    theme.annotate_keypoints(frame, KeyPoints(xy=hand_points(105, 215)), HAND_21)
-    theme.annotate_keypoints(frame, KeyPoints(xy=pose_points(275, 190), class_id=[1]), POSE_17)
+    theme.annotate_keypoints(frame, KeyPoints(xy=hand_points(85, 225)), HAND_21)
+    theme.annotate_keypoints(frame, KeyPoints(xy=pose_points(225, 195), class_id=[1]), POSE_17)
+    theme.annotate_keypoints(frame, KeyPoints(xy=face_points(318, 150, 115), class_id=[2]), FACE_5)
     cv2.putText(
         frame, theme_name, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
         (230, 230, 230), 1, cv2.LINE_AA,

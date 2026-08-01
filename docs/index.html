@@ -466,6 +466,7 @@ const I18N = {
     "preview.boxes": "boxes",
     "skeleton.hand": "hand",
     "skeleton.pose": "pose",
+    "skeleton.face": "face",
     "preview.skeleton": "skeleton",
     "section.pose": "Skeleton",
     "field.poseThickness": "Bone thickness",
@@ -555,6 +556,7 @@ const I18N = {
     "preview.boxes": "kutular",
     "skeleton.hand": "el",
     "skeleton.pose": "poz",
+    "skeleton.face": "yüz",
     "preview.skeleton": "iskelet",
     "section.pose": "İskelet",
     "field.poseThickness": "Kemik kalınlığı",
@@ -683,7 +685,7 @@ function initialLanguage() {
 
 // İskelet topolojileri: src/cvflair/keypoints.py içindekilerle birebir aynı.
 //: İskelet kipinde paletin ilk iki rengi bu iskeletlere gidiyor.
-const SKELETON_TARGETS = ["skeleton.hand", "skeleton.pose"];
+const SKELETON_TARGETS = ["skeleton.hand", "skeleton.pose", "skeleton.face"];
 
 const HAND_EDGES = [
   [0, 1], [1, 2], [2, 3], [3, 4],
@@ -693,6 +695,12 @@ const HAND_EDGES = [
   [13, 17], [17, 18], [18, 19], [19, 20],
   [0, 17],
 ];
+// Yüz modellerinin ortak beş noktası: göz, göz, burun, ağız köşeleri.
+// Gözler arasına çizgi yok, yüzü ortadan bölüyor.
+const FACE_EDGES = [
+  [0, 2], [1, 2], [2, 3], [2, 4], [3, 4],
+];
+
 const POSE_EDGES = [
   [0, 1], [0, 2], [1, 3], [2, 4],
   [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
@@ -1637,6 +1645,16 @@ function strokeSkeleton(points, edges, colour, thickness) {
   ctx.stroke();
 }
 
+function facePoints(cx, cy, time, scale) {
+  // Baş hafifçe sallanıyor: duran bir yüz ölü görünüyor.
+  const tilt = Math.sin(time * 0.9) * 0.05;
+  const layout = [[-0.22, -0.20], [0.22, -0.20], [0, 0.02], [-0.16, 0.28], [0.16, 0.28]];
+  return layout.map(([dx, dy]) => [
+    cx + (dx * Math.cos(tilt) - dy * Math.sin(tilt)) * scale,
+    cy + (dx * Math.sin(tilt) + dy * Math.cos(tilt)) * scale,
+  ]);
+}
+
 function drawSkeletons(width, height) {
   drawBackdrop(width, height);
 
@@ -1645,14 +1663,19 @@ function drawSkeletons(width, height) {
   const curl = 0.12 + 0.5 * ((Math.sin(time * 1.6) + 1) / 2);
   const skeletons = [
     {
-      points: handPoints(width * 0.28, height * 0.78, curl, scale),
+      points: handPoints(width * 0.22, height * 0.78, curl, scale),
       edges: HAND_EDGES,
       colour: state.palette[0],
     },
     {
-      points: posePoints(width * 0.7, height * 0.9, time, scale),
+      points: posePoints(width * 0.62, height * 0.9, time, scale),
       edges: POSE_EDGES,
       colour: state.palette[1 % state.palette.length],
+    },
+    {
+      points: facePoints(width * 0.86, height * 0.46, time, scale * 170),
+      edges: FACE_EDGES,
+      colour: state.palette[2 % state.palette.length],
     },
   ];
 

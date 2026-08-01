@@ -22,7 +22,7 @@ same theme.
 *The same detections, four themes. Produced by `tools/make_demo_gif.py`: boxes
 drawn over `docs/city.png`. Use `--background <path>` for another image.*
 
-**Nine box styles, five ready themes, hand and pose skeletons -- all from one
+**Nine box styles, five ready themes, hand, pose and face skeletons -- all from one
 `Theme(...)` line.** Try them without installing anything:
 **[theme playground →](https://kbycode.github.io/cvflair/)**
 Boxes and skeletons have separate preview modes; change the settings, copy the
@@ -83,8 +83,8 @@ for frame, detections in cam.stream(model="yolov8n.pt"):
 Instead of `model` you can pass your own function returning `Detections` -- that
 is what keeps the library model-agnostic.
 
-**Hand and pose skeletons** are drawn beside the boxes; the points come from your
-model as well:
+**Hand, pose and face skeletons** are drawn beside the boxes; the points come from
+your model as well:
 
 ```python
 from cvflair import HAND_21, KeyPoints
@@ -109,8 +109,8 @@ The detailed docs are in Turkish; this page and the playground are bilingual.
 |---|---|
 | [Themes and box styles](https://github.com/kbycode/cvflair/blob/main/docs/temalar.md) | Five themes, nine styles, pulse and trace, accent colour, palettes, stats panel, writing your own theme |
 | [Command line and video writing](https://github.com/kbycode/cvflair/blob/main/docs/komut-satiri.md) | The `cvflair` command, sources and options, `VideoWriter` |
-| [Key points and skeletons](https://github.com/kbycode/cvflair/blob/main/docs/noktalar.md) | Hand and pose skeletons, `KeyPoints`, shipped topologies, MediaPipe, your own layout |
-| [Models and detections](https://github.com/kbycode/cvflair/blob/main/docs/modeller.md) | `stream(model=...)`, your own detector, `Detections`, Ultralytics settings, video files |
+| [Key points and skeletons](https://github.com/kbycode/cvflair/blob/main/docs/noktalar.md) | Hand, pose and face skeletons, `KeyPoints`, shipped topologies, MediaPipe, your own layout |
+| [Models and detections](https://github.com/kbycode/cvflair/blob/main/docs/modeller.md) | `stream(model=...)`, your own detector, `Detections`, xywh and MediaPipe boxes, Ultralytics settings, video files |
 | [API summary and internals](https://github.com/kbycode/cvflair/blob/main/docs/api.md) | The whole public surface, thread and queue behaviour, measured performance |
 | [Example gallery](https://github.com/kbycode/cvflair/blob/main/examples/README.md) | Ten working examples; which need a camera and which do not |
 | [Contributing](https://github.com/kbycode/cvflair/blob/main/CONTRIBUTING.md) | Setup, scope boundaries, how to add a theme |

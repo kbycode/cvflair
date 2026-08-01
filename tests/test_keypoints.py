@@ -108,12 +108,21 @@ def test_skeleton_can_be_named():
     assert resolve_skeleton("hand") is HAND_21
     assert resolve_skeleton("  POSE ") is POSE_17
     assert resolve_skeleton([(0, 1), (1, 2)]) == ((0, 1), (1, 2))
-    assert set(SKELETONS) == {"hand", "pose"}
+    assert {"hand", "pose"} <= set(SKELETONS)
+
+
+def test_every_shipped_skeleton_resolves_by_name():
+    for name, skeleton in SKELETONS.items():
+        assert resolve_skeleton(name) is skeleton
 
 
 def test_unknown_skeleton_lists_the_options():
-    with pytest.raises(ValueError, match="Available: hand, pose"):
+    """Hata iletisi listedeki her adı saymalı; liste büyüdükçe kendini güncellemeli."""
+    with pytest.raises(ValueError) as failure:
         resolve_skeleton("kanat")
+
+    message = str(failure.value)
+    assert all(name in message for name in SKELETONS)
 
 
 # -- çizim ------------------------------------------------------------------

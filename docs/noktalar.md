@@ -94,6 +94,31 @@ kamera görüntüsünün üzerine açılıp kapanan 21 noktalı bir el çizer. E
 (ek kurulum gerekmesin diye); gerçek bir elde tek fark noktaların nereden geldiği,
 örneğin MediaPipe bağlantısı dosyanın başında yazılı.
 
+## Yüz: beş nokta
+
+Yüz modellerinin ortak paydası beş noktadır — iki göz, burun, iki ağız köşesi.
+InsightFace'in `kps` alanı, RetinaFace ve MediaPipe Face Detection aynı sırayı
+kullanır, `FACE_5` de o sıraya göre bağlar:
+
+```python
+from cvflair import FACE_5, Detections, KeyPoints
+
+faces = model.get(frame)                      # InsightFace
+detections = Detections(
+    xyxy=[face.bbox for face in faces],
+    confidence=[face.det_score for face in faces],
+)
+points = KeyPoints(xy=[face.kps for face in faces])
+
+cam.show(frame, detections, keypoints=points, skeleton=FACE_5)
+```
+
+Gözler arasına çizgi çekilmez: yüzü ortadan bölüyor. Bağlantılar gözlerden
+buruna, burundan ağız köşelerine ve ağız boyuncadır; 20 piksellik yüzde bile
+okunur bir işaret kalıyor.
+
+`skeleton="face"` de aynı topolojiyi verir.
+
 ## MediaPipe sonucunu okumak
 
 MediaPipe noktaları 0-1 aralığında verir ve iki farklı API sürümünde iki farklı
@@ -107,9 +132,14 @@ points = KeyPoints.from_mediapipe(sonuc, *frame.shape[1::-1])
 cam.show(frame, keypoints=points, skeleton=HAND_21)
 ```
 
-Eski `solutions` sonucu (`multi_hand_landmarks`, `pose_landmarks`), yeni `tasks`
-sonucu (`hand_landmarks`) ve düz nokta listesi kabul edilir. Karede el ya da
-gövde bulunamadığında boş `KeyPoints` döner, çizim de yapılmaz.
+Eski `solutions` sonucu (`multi_hand_landmarks`, `pose_landmarks`,
+`face_landmarks`), yeni `tasks` sonucu (`hand_landmarks`) ve düz nokta listesi
+kabul edilir. Karede el ya da gövde bulunamadığında boş `KeyPoints` döner, çizim
+de yapılmaz.
+
+MediaPipe'ın yüz **tespiti** ayrı bir ailedir: nokta değil kutu verir ve
+`Detections.from_mediapipe(sonuc, genislik, yukseklik)` ile okunur — bkz.
+[modeller](modeller.md).
 
 MediaPipe bir bağımlılık değil: alanlar adlarıyla okunur, paket onu import etmez.
 
