@@ -2,6 +2,14 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **Oval gizleme.** `BlurAnnotator(shape="ellipse")` ve `Theme(hide_shape=...)`
+  kutunun tamamı yerine içten teğet ovali gizler. Dikdörtgen gizleme yüzlerde ve
+  yuvarlak çerçeve biçimlerinde köşelerden taşıp çerçeveyle uyumsuz duruyordu.
+  Aynı boyuttaki maskeler saklanıyor, kare başına yeniden çizilmiyor.
+
 ## 0.13.0 — 2026-08-01
 
 ### Eklendi

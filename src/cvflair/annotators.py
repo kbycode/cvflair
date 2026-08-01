@@ -755,6 +755,30 @@ class ConfidenceBarAnnotator:
         return f"ConfidenceBarAnnotator(height={self.height})"
 
 
+#: Aynı boyuttaki oval maskeler yeniden kullanılıyor: her karede yeniden
+#: çizmek, gizlenen yüz sayısıyla çarpılan gereksiz bir maliyet.
+_OVAL_CACHE: dict[tuple[int, int], np.ndarray] = {}
+_OVAL_CACHE_LIMIT = 64
+
+
+def _oval_mask(shape: tuple[int, int]) -> np.ndarray:
+    """Dikdörtgene içten teğet, kenarı yumuşatılmış oval maske."""
+    cached = _OVAL_CACHE.get(shape)
+    if cached is not None:
+        return cached
+
+    height, width = shape
+    mask = np.zeros(shape, dtype=np.uint8)
+    cv2.ellipse(
+        mask, (width // 2, height // 2), (max(width // 2 - 1, 1), max(height // 2 - 1, 1)),
+        0, 0, 360, 255, -1, cv2.LINE_AA,
+    )
+    if len(_OVAL_CACHE) >= _OVAL_CACHE_LIMIT:
+        _OVAL_CACHE.clear()
+    _OVAL_CACHE[shape] = mask
+    return mask
+
+
 class BlurAnnotator:
     """
     Hide what is inside each box: blur it, or drop it to blocks.
@@ -762,12 +786,19 @@ class BlurAnnotator:
     Nothing is drawn on top -- the region itself is replaced, which is what
     face hiding needs. Boxes are clipped to the frame, so a detection hanging
     off the edge blurs the part that is visible.
+
+    ``shape`` decides what gets replaced. A rectangle is the default; ``"ellipse"``
+    hides an oval inscribed in the box, which sits better on faces and matches
+    the rounded box styles.
     """
 
-    def __init__(self, mode: str = "blur", strength: int = 15) -> None:
+    def __init__(self, mode: str = "blur", strength: int = 15, shape: str = "box") -> None:
         if mode not in ("blur", "pixelate"):
             raise ValueError(f"Unknown mode {mode!r}. Use 'blur' or 'pixelate'.")
+        if shape not in ("box", "ellipse"):
+            raise ValueError(f"Unknown shape {shape!r}. Use 'box' or 'ellipse'.")
         self.mode = mode
+        self.shape = shape
         #: Blur radius, or the block size for pixelation. Bigger hides more.
         self.strength = max(1, int(strength))
 
@@ -785,10 +816,15 @@ class BlurAnnotator:
                 continue
 
             region = scene[y1:y2, x1:x2]
-            scene[y1:y2, x1:x2] = (
-                self._pixelate(region) if self.mode == "pixelate" else self._blur(region)
-            )
+            hidden = self._pixelate(region) if self.mode == "pixelate" else self._blur(region)
+            if self.shape == "ellipse":
+                cv2.copyTo(hidden, _oval_mask(region.shape[:2]), region)
+            else:
+                scene[y1:y2, x1:x2] = hidden
         return scene
+
+    def __repr__(self) -> str:
+        return f"BlurAnnotator(mode={self.mode!r}, shape={self.shape!r}, strength={self.strength})"
 
     def _blur(self, region: np.ndarray) -> np.ndarray:
         # Çekirdek tek sayı olmalı ve bölgeden büyük olmamalı.
@@ -802,8 +838,6 @@ class BlurAnnotator:
         small = cv2.resize(region, blocks, interpolation=cv2.INTER_AREA)
         return cv2.resize(small, (width, height), interpolation=cv2.INTER_NEAREST)
 
-    def __repr__(self) -> str:
-        return f"BlurAnnotator(mode={self.mode!r}, strength={self.strength})"
 
 
 class MaskAnnotator:

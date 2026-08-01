@@ -110,6 +110,9 @@ class Theme:
     #: Kutu içini gizleme: None, "blur" ya da "pixelate". Çerçeveden önce uygulanır.
     hide: str | None = None
     hide_strength: int = 15
+    #: Gizlenen alanın biçimi: "box" ya da "ellipse". Oval, yüzlerde ve yuvarlak
+    #: çerçeve biçimlerinde köşeleri boş bırakmadığı için daha iyi oturuyor.
+    hide_shape: str = "box"
     #: Kilitlenme etkisi: kutunun çevresinde açılıp sönen bir halka. Faz saate
     #: bağlı, yani duran karede bile hareket eder.
     pulse: bool = False
@@ -198,7 +201,7 @@ class Theme:
             else None
         )
         self._blur_annotator = (
-            BlurAnnotator(mode=self.hide, strength=self.hide_strength)
+            BlurAnnotator(mode=self.hide, strength=self.hide_strength, shape=self.hide_shape)
             if self.hide is not None
             else None
         )

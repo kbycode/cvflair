@@ -147,3 +147,74 @@ def test_theme_draws_zones_with_its_palette():
     Theme(palette=["#FF0000"]).annotate_zone(frame, TRIANGLE, fill_opacity=0.3)
 
     assert painted(frame) > 0
+
+
+# -- gizlenen alanın biçimi --------------------------------------------------
+
+
+def test_ellipse_leaves_the_corners_alone():
+    """
+    Dikdörtgen gizleme, yuvarlak çerçevelerde köşelerden taşıyor ve yüzlerde
+    çirkin duruyor. Oval biçim yalnızca içteki elipsi gizliyor.
+    """
+    frame = noisy()
+    original = frame.copy()
+
+    BlurAnnotator(mode="pixelate", strength=12, shape="ellipse").annotate(frame, single())
+
+    # Pencere dar tutuluyor: elips köşeye 14 piksel kala giriyor, geniş bir
+    # pencere kenarı kesip testi yanıltıyor.
+    corner = (slice(31, 39), slice(31, 39))
+    centre = (slice(60, 80), slice(70, 90))
+    assert np.array_equal(frame[corner], original[corner]), "köşe gizlenmemeliydi"
+    assert not np.array_equal(frame[centre], original[centre]), "merkez gizlenmeliydi"
+
+
+def test_box_shape_covers_the_corners():
+    frame = noisy()
+    original = frame.copy()
+
+    BlurAnnotator(mode="pixelate", strength=12, shape="box").annotate(frame, single())
+
+    corner = (slice(31, 39), slice(31, 39))
+    assert not np.array_equal(frame[corner], original[corner])
+
+
+def test_ellipse_hides_less_than_the_box():
+    box_frame, oval_frame = noisy(), noisy()
+    original = noisy()
+
+    BlurAnnotator(mode="pixelate", shape="box").annotate(box_frame, single())
+    BlurAnnotator(mode="pixelate", shape="ellipse").annotate(oval_frame, single())
+
+    changed = lambda frame: int(np.count_nonzero(np.any(frame != original, axis=2)))  # noqa: E731
+    assert changed(oval_frame) < changed(box_frame)
+    assert changed(oval_frame) > changed(box_frame) * 0.5, "oval alanın çoğunu kapsamalı"
+
+
+def test_unknown_shape_is_rejected():
+    with pytest.raises(ValueError, match="Use 'box' or 'ellipse'"):
+        BlurAnnotator(shape="yuvarlak")
+
+
+def test_theme_passes_the_shape_through():
+    frame = noisy()
+    original = frame.copy()
+
+    Theme(hide="pixelate", hide_shape="ellipse", labels=False).annotate(frame, single())
+
+    # Kutu çizgisi kenardan geçiyor; pencere onun içinden, elipsin dışından
+    # seçiliyor -- yoksa değişikliğin sebebi gizleme mi çizgi mi ayırt edilemez.
+    corner = (slice(34, 40), slice(34, 40))
+    assert np.array_equal(frame[corner], original[corner])
+
+
+def test_mask_cache_does_not_grow_without_bound():
+    """Her boyut için maske saklanıyor; sınırsız büyürse bellek sızdırırdı."""
+    from cvflair.annotators import _OVAL_CACHE, _OVAL_CACHE_LIMIT, _oval_mask
+
+    _OVAL_CACHE.clear()
+    for size in range(4, 4 + _OVAL_CACHE_LIMIT * 2):
+        _oval_mask((size, size))
+
+    assert len(_OVAL_CACHE) <= _OVAL_CACHE_LIMIT

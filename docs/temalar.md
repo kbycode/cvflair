@@ -67,6 +67,28 @@ theme = Theme(
 )
 ```
 
+## Kutu içini gizleme
+
+`hide` kutunun içini bulanıklaştırır ya da bloklara indirir; çerçeveden önce
+uygulandığı için kutu çizgisi ve etiket üstünde net kalır.
+
+```python
+Theme(hide="blur")                                   # dikdörtgen alan
+Theme(hide="pixelate", hide_shape="ellipse")         # içten teğet oval
+```
+
+`hide_shape="ellipse"` yüzlerde ve yuvarlak çerçeve biçimlerinde daha iyi
+oturuyor: dikdörtgen gizleme köşelerden taşıp çerçeveyle uyumsuz duruyor.
+
+Tema geneli yerine belirli tespitleri gizlemek gerekiyorsa `BlurAnnotator`
+doğrudan çağrılabilir — `Theme(hide=...)` bütün kutulara uygulanır:
+
+```python
+from cvflair.annotators import BlurAnnotator
+
+BlurAnnotator(mode="pixelate", shape="ellipse").annotate(frame, gizlenecekler)
+```
+
 ## Nabız ve iz
 
 ![nabız ve iz](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/motion.png)

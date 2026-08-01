@@ -43,7 +43,7 @@ Ayrıntı ve komut satırı karşılığı: [komut satırı](komut-satiri.md).
 | `theme.to_dict()` / `Theme.from_dict(...)` | Düz veriye çevirir / geri kurar; yalnızca varsayılandan farklılar yazılır |
 | `BOX_STYLES` / `HUD_POSITIONS` | Geçerli değerler |
 | `Color`, `ColorPalette`, `ColorLookup` | Renk altyapısı; hex dizgeleri her yerde kabul edilir |
-| `cvflair.annotators` | Dokuz çerçeve biçimi, etiket plakası, iz, nabız ve panel sınıfları |
+| `cvflair.annotators` | Dokuz çerçeve biçimi, etiket plakası, iz, nabız, gizleme ve panel sınıfları |
 
 ## Not defteri
 
