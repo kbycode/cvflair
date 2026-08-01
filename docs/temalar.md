@@ -166,3 +166,17 @@ Alanların tamamı ve varsayılanları için `help(Theme)`. Birkaç davranış n
 
 Yeni bir tema eklemek (depoya katkı olarak):
 [CONTRIBUTING.md](https://github.com/kbycode/cvflair/blob/main/CONTRIBUTING.md)
+
+## Temayı dosyada taşımak
+
+Bir temayı paylaşmak ya da depoya koymak için JSON olarak yazılabilir:
+
+```python
+theme.save("tema.json")
+theme = get_theme("tema.json")      # ya da Theme.load("tema.json")
+```
+
+Yalnızca varsayılandan farklı ayarlar yazılır. Aynı dosya komut satırında da
+geçerlidir: `cvflair 0 --theme tema.json --model yolov8n.pt`. Playground'daki
+**tema.json indir** düğmesi bu dosyayı üretir, yani ekranda ayarladığın görünüm
+doğrudan komut satırına taşınabilir.

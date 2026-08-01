@@ -9,8 +9,11 @@ common avoidable cost in this kind of pipeline.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+from enum import Enum
+from pathlib import Path
 from typing import Any, Literal
 
 import cv2
@@ -374,6 +377,53 @@ class Theme:
             self._hud_annotator.annotate(scene, stats)
         return scene
 
+    def to_dict(self) -> dict[str, Any]:
+        """
+        The theme as plain data, ready for ``json.dump``.
+
+        Only what differs from the defaults is written, so a shared file says
+        what was actually chosen. Colours come back as hex strings.
+        """
+        defaults = _default_theme_data()
+        data = {name: _plain(getattr(self, name)) for name in _FIELD_NAMES}
+        return {
+            name: value
+            for name, value in data.items()
+            if name == "name" or value != defaults[name]
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Theme:
+        """Build a theme from :meth:`to_dict` output."""
+        unknown = sorted(set(data) - _FIELD_SET)
+        if unknown:
+            raise ValueError(
+                f"Unknown theme fields: {', '.join(unknown)}. "
+                f"Available: {', '.join(sorted(_FIELD_SET))}."
+            )
+        return cls(**dict(data))
+
+    @classmethod
+    def load(cls, path: str | Path) -> Theme:
+        """Read a theme from a JSON file written by :meth:`save`."""
+        source = Path(path)
+        try:
+            data = json.loads(source.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Tema dosyası okunamadı ({source}): {error}") from None
+        if not isinstance(data, dict):
+            raise ValueError(f"Tema dosyası bir nesne içermeli, {type(data).__name__} bulundu.")
+        return cls.from_dict(data)
+
+    def save(self, path: str | Path) -> Path:
+        """Write the theme to a JSON file and return the path."""
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        return target
+
     def reset_trace(self) -> None:
         """Biriken izleri unut -- yeni bir kaynağa geçerken."""
         if self._trace_annotator is not None:
@@ -515,14 +565,49 @@ def available_themes() -> list[str]:
     return sorted(_THEMES)
 
 
-def get_theme(theme: str | Theme) -> Theme:
-    """
-    Resolve a theme name to a fresh :class:`Theme`; pass instances through.
+#: Tema alanları, sınıftaki sırayla: yazılan dosya okunaklı ve sırası kararlı
+#: olsun diye küme değil demet.
+_FIELD_NAMES: tuple[str, ...] = tuple(item.name for item in fields(Theme))
+_FIELD_SET = frozenset(_FIELD_NAMES)
 
-    Each call builds a new instance, so two cameras never share annotators.
+
+def _plain(value: Any) -> Any:
+    """Renk ve enum değerlerini JSON'a yazılabilir hale getirir."""
+    if isinstance(value, ColorPalette):
+        return [colour.as_hex() for colour in value.colors]
+    if isinstance(value, Color):
+        return value.as_hex()
+    if isinstance(value, Enum):
+        return value.value
+    return value
+
+
+def _default_theme_data() -> dict[str, Any]:
+    """Varsayılan temanın düz karşılığı; yalnızca bir kere kuruluyor."""
+    global _DEFAULTS
+    if _DEFAULTS is None:
+        blank = Theme()
+        _DEFAULTS = {name: _plain(getattr(blank, name)) for name in _FIELD_NAMES}
+    return _DEFAULTS
+
+
+_DEFAULTS: dict[str, Any] | None = None
+
+
+def get_theme(theme: str | Theme | Mapping[str, Any]) -> Theme:
+    """
+    Resolve a theme to a fresh :class:`Theme`; pass instances through.
+
+    Accepts a preset name, a path to a ``.json`` file written by
+    :meth:`Theme.save`, a mapping of fields, or a theme itself. Each call builds
+    a new instance, so two cameras never share annotators.
     """
     if isinstance(theme, Theme):
         return theme
+    if isinstance(theme, Mapping):
+        return Theme.from_dict(theme)
+    if isinstance(theme, str) and theme.strip().lower().endswith(".json"):
+        return Theme.load(theme.strip())
     if not isinstance(theme, str):
         raise TypeError(f"theme must be a name or a Theme instance, got {type(theme).__name__}.")
     try:

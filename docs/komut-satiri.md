@@ -48,6 +48,29 @@ gibi geçirir.
 Çıkış kodları: `0` başarılı, `1` çalışma hatası (kaynak yok, dosya açılamadı),
 `2` kullanım hatası (bilinmeyen tema, eksik argüman).
 
+## Tema dosyası
+
+`--theme` hazır bir tema adı ya da bir `.json` dosyası alır. Playground'da
+ayarladığın görünüm bayrağa sığmadığı için dosyayla taşınır: sayfadaki
+**tema.json indir** düğmesi tam bunun için.
+
+```bash
+cvflair 0 --theme tema.json --model yolov8n.pt
+```
+
+Aynı dosya Python'dan da okunur ve yazılır:
+
+```python
+from cvflair import Theme, get_theme
+
+Theme(box_style="sketch", palette=["#39FF14"], glow=True).save("tema.json")
+theme = get_theme("tema.json")
+```
+
+Dosyaya yalnızca varsayılandan farklı ayarlar yazılır, yani paylaşılan dosya
+neyin seçildiğini anlatır. `Theme.to_dict()` ve `Theme.from_dict()` aynı biçimi
+sözlük olarak verir; `get_theme` sözlüğü de doğrudan kabul eder.
+
 ## Video yazma
 
 Komut satırının altındaki yazıcı kütüphaneden de kullanılabilir:

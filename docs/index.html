@@ -364,6 +364,14 @@
         <button id="copyLink" type="button" data-i18n="button.copyLink"></button>
         <button id="reset" type="button" data-i18n="button.reset"></button>
       </div>
+
+      <h2 data-i18n="section.shell"></h2>
+      <pre id="shell"></pre>
+      <p class="hint" id="shellHint"></p>
+      <div class="actions">
+        <button id="copyShell" type="button" data-i18n="button.copyShell"></button>
+        <button id="downloadTheme" type="button" data-only="custom" data-i18n="button.themeFile"></button>
+      </div>
       <div class="status" id="status"></div>
     </div>
   </div>
@@ -470,6 +478,13 @@ const I18N = {
     "section.label": "Label",
     "section.preview": "Preview",
     "section.code": "Python code",
+    "section.shell": "Command line",
+    "shell.preset": "The package ships a command. Camera index, a video file, an image or a folder of images all work as the source.",
+    "shell.custom": "A custom look cannot fit in a flag, so it travels as a file: download tema.json next to where you run the command.",
+    "button.copyShell": "Copy command",
+    "button.themeFile": "Download tema.json",
+    "status.shell": "Command copied.",
+    "status.themeFile": "tema.json downloaded.",
     "preset.custom": "custom",
     "field.palette": "Colour palette",
     "field.style": "Style",
@@ -552,6 +567,13 @@ const I18N = {
     "section.label": "Etiket",
     "section.preview": "Önizleme",
     "section.code": "Python kodu",
+    "section.shell": "Komut satırı",
+    "shell.preset": "Paketle birlikte bir komut geliyor. Kaynak olarak kamera numarası, video dosyası, görsel ya da görsel klasörü verilebilir.",
+    "shell.custom": "Özel görünüm bir bayrağa sığmıyor, dosyayla taşınıyor: tema.json'u komutu çalıştıracağın yere indir.",
+    "button.copyShell": "Komutu kopyala",
+    "button.themeFile": "tema.json indir",
+    "status.shell": "Komut kopyalandı.",
+    "status.themeFile": "tema.json indirildi.",
     "preset.custom": "özel",
     "field.palette": "Renk paleti",
     "field.style": "Biçim",
@@ -640,6 +662,10 @@ function applyLanguage(next) {
   }
   document.getElementById("toggleAnimation").textContent =
     animating ? t("button.pause") : t("button.play");
+  // Duruma göre seçilen metinler `data-i18n` ile değil kod içinden yazılıyor,
+  // yani yukarıdaki döngü onlara dokunmuyor.
+  document.getElementById("shellHint").textContent =
+    t(preset === "custom" ? "shell.custom" : "shell.preset");
   renderSwatches();
 }
 
@@ -875,13 +901,16 @@ function usesAccent() {
   return Boolean(state.accent) && ACCENT_STYLES.includes(state.boxStyle);
 }
 
-function pythonCode() {
-  const lines = [];
-  const colors = state.palette.map((c) => '"' + c.toUpperCase() + '"').join(", ");
-  lines.push('    name="playground",');
-  lines.push("    palette=[" + colors + "],");
+// Temanın varsayılandan farklı bütün ayarları, Python alan adlarıyla. Hem
+// üretilen kod hem indirilen tema dosyası buradan çıkıyor: iki yerde ayrı ayrı
+// kurulsalar biri güncellenip diğeri unutulurdu.
+function themeSettings() {
+  const settings = [];
+  const add = (name, value) => settings.push([name, value]);
+  add("name", "playground");
+  add("palette", state.palette.map((colour) => colour.toUpperCase()));
   if (usesAccent()) {
-    lines.push('    accent_palette="' + state.accent.toUpperCase() + '",');
+    add("accent_palette", state.accent.toUpperCase());
   }
 
   // İskelet kipinde kutu ve etiket ayarları koda girmiyor: seçilen aile neyse
@@ -889,91 +918,107 @@ function pythonCode() {
   const skeletonMode = state.preview === "skeleton";
 
   if (!skeletonMode && state.boxStyle !== DEFAULTS.boxStyle) {
-    lines.push('    box_style="' + state.boxStyle + '",');
+    add("box_style", state.boxStyle);
   }
   if (!skeletonMode && state.thickness !== DEFAULTS.thickness) {
-    lines.push("    thickness=" + state.thickness + ",");
+    add("thickness", state.thickness);
   }
   if (!skeletonMode && ["round", "bracket"].includes(state.boxStyle) && state.roundness !== DEFAULTS.roundness) {
-    lines.push("    roundness=" + state.roundness + ",");
+    add("roundness", state.roundness);
   }
   if (!skeletonMode && CORNER_STYLES.includes(state.boxStyle) && state.cornerLength !== DEFAULTS.cornerLength) {
-    lines.push("    corner_length=" + state.cornerLength + ",");
+    add("corner_length", state.cornerLength);
   }
   if (!skeletonMode && DASH_STYLES.includes(state.boxStyle)) {
     if (state.dashLength !== DEFAULTS.dashLength) {
-      lines.push("    dash_length=" + state.dashLength + ",");
+      add("dash_length", state.dashLength);
     }
     if (state.gapLength !== DEFAULTS.gapLength) {
-      lines.push("    gap_length=" + state.gapLength + ",");
+      add("gap_length", state.gapLength);
     }
   }
   if (!skeletonMode && state.boxStyle === "crosshair") {
     if (state.armLength !== DEFAULTS.armLength) {
-      lines.push("    arm_length=" + state.armLength + ",");
+      add("arm_length", state.armLength);
     }
     if (state.centerSize !== DEFAULTS.centerSize) {
-      lines.push("    center_size=" + state.centerSize + ",");
+      add("center_size", state.centerSize);
     }
   }
   if (!skeletonMode && state.boxStyle === "target" && state.edgeThickness !== DEFAULTS.edgeThickness) {
-    lines.push("    edge_thickness=" + state.edgeThickness + ",");
+    add("edge_thickness", state.edgeThickness);
   }
   if (!skeletonMode && state.boxStyle === "sketch" && state.wobble !== DEFAULTS.wobble) {
-    lines.push("    wobble=" + state.wobble + ",");
+    add("wobble", state.wobble);
   }
   if (!skeletonMode && state.pulse) {
-    lines.push("    pulse=True,");
+    add("pulse", true);
     if (state.pulseReach !== DEFAULTS.pulseReach) {
-      lines.push("    pulse_reach=" + state.pulseReach + ",");
+      add("pulse_reach", state.pulseReach);
     }
   }
   if (!skeletonMode && state.trace) {
-    lines.push("    trace=True,");
+    add("trace", true);
     if (state.traceLength !== DEFAULTS.traceLength) {
-      lines.push("    trace_length=" + state.traceLength + ",");
+      add("trace_length", state.traceLength);
     }
   }
   if (state.glow) {
-    lines.push("    glow=True,");
+    add("glow", true);
     if (state.glowThickness !== DEFAULTS.glowThickness) {
-      lines.push("    glow_thickness=" + state.glowThickness + ",");
+      add("glow_thickness", state.glowThickness);
     }
-    if (state.glowDim !== DEFAULTS.glowDim) lines.push("    glow_dim=" + state.glowDim + ",");
+    if (state.glowDim !== DEFAULTS.glowDim) add("glow_dim", state.glowDim);
   }
   if (state.preview === "skeleton") {
     if (state.poseThickness !== DEFAULTS.poseThickness) {
-      lines.push("    pose_thickness=" + state.poseThickness + ",");
+      add("pose_thickness", state.poseThickness);
     }
     if (state.poseRadius !== DEFAULTS.poseRadius) {
-      lines.push("    pose_radius=" + state.poseRadius + ",");
+      add("pose_radius", state.poseRadius);
     }
   }
   if (state.hud) {
-    lines.push("    hud=True,");
+    add("hud", true);
     if (state.hudPosition !== DEFAULTS.hudPosition) {
-      lines.push('    hud_position="' + state.hudPosition + '",');
+      add("hud_position", state.hudPosition);
     }
     if (state.hudOpacity !== DEFAULTS.hudOpacity) {
-      lines.push("    hud_opacity=" + state.hudOpacity + ",");
+      add("hud_opacity", state.hudOpacity);
     }
   }
   if (skeletonMode) {
     // etiket çizimi yalnızca kutularda kullanılıyor
   } else if (!state.labels) {
-    lines.push("    labels=False,");
+    add("labels", false);
   } else {
     if (state.textColor !== DEFAULTS.textColor) {
-      lines.push('    text_color="' + state.textColor.toUpperCase() + '",');
+      add("text_color", state.textColor.toUpperCase());
     }
-    if (state.textScale !== DEFAULTS.textScale) lines.push("    text_scale=" + state.textScale + ",");
+    if (state.textScale !== DEFAULTS.textScale) add("text_scale", state.textScale);
     if (state.textPadding !== DEFAULTS.textPadding) {
-      lines.push("    text_padding=" + state.textPadding + ",");
+      add("text_padding", state.textPadding);
     }
     if (state.labelRadius !== DEFAULTS.labelRadius) {
-      lines.push("    label_radius=" + state.labelRadius + ",");
+      add("label_radius", state.labelRadius);
     }
   }
+
+  return settings;
+}
+
+function pythonLiteral(value) {
+  if (Array.isArray(value)) return "[" + value.map(pythonLiteral).join(", ") + "]";
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "string") return '"' + value + '"';
+  return String(value);
+}
+
+function pythonCode() {
+  const skeletonMode = state.preview === "skeleton";
+  const lines = themeSettings().map(
+    ([name, value]) => "    " + name + "=" + pythonLiteral(value) + ","
+  );
 
   const header = skeletonMode
     ? "from cvflair import HAND_21, Camera, KeyPoints, Theme"
@@ -992,6 +1037,20 @@ function pythonCode() {
       ];
 
   return [header, "", "theme = Theme(", ...lines, ")", "", ...tail].join("\n");
+}
+
+
+// İndirilecek tema dosyası: Python tarafındaki Theme.to_dict() ile aynı biçim.
+function themeJson() {
+  return JSON.stringify(Object.fromEntries(themeSettings()), null, 2) + "\n";
+}
+
+function shellCommand() {
+  const model = state.preview === "skeleton" ? "yolov8n-pose.pt" : "yolov8n.pt";
+  // Hazır bir temanın üstünde hiçbir değişiklik yoksa adı yeter; aksi halde
+  // ekrandaki görünümü ancak tema dosyası taşır.
+  const theme = preset === "custom" ? "tema.json" : preset;
+  return "cvflair 0 --theme " + theme + " --model " + model;
 }
 
 // --- çizim -----------------------------------------------------------------
@@ -1674,6 +1733,9 @@ function rowIsVisible(token) {
   if (token === "hud") return state.hud;
   if (token === "glow") return state.glow;
   if (token === "labels") return state.labels;
+  // Hazır temada komut dosyaya ihtiyaç duymuyor; indirme düğmesi de
+  // gösterilen komutla tutarlı olsun diye kayboluyor.
+  if (token === "custom") return preset === "custom";
   if (token === "pulse") return state.pulse;
   if (token === "trace") return state.trace;
   if (token === "accent") return usesAccent();
@@ -1710,6 +1772,9 @@ function syncControls() {
 
   renderSwatches();
   document.getElementById("code").textContent = pythonCode();
+  document.getElementById("shell").textContent = shellCommand();
+  document.getElementById("shellHint").textContent =
+    t(preset === "custom" ? "shell.custom" : "shell.preset");
 }
 
 function renderSwatches() {
@@ -1822,6 +1887,13 @@ function bindControls() {
     link.click();
   });
 
+  document.getElementById("copyShell").addEventListener("click", () => {
+    copy(shellCommand(), t("status.shell"));
+  });
+  document.getElementById("downloadTheme").addEventListener("click", () => {
+    download(new Blob([themeJson()], { type: "application/json" }), "tema.json");
+    setStatus(t("status.themeFile"));
+  });
   document.getElementById("copyCode").addEventListener("click", () => {
     copy(pythonCode(), t("status.code"));
   });
@@ -1836,6 +1908,17 @@ function bindControls() {
     history.replaceState(null, "", location.pathname);
     syncControls();
   });
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  // Bağlantı tıklandıktan sonra bırakılıyor; hemen bırakmak indirmeyi bazı
+  // tarayıcılarda yarıda kesiyor.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function copy(text, message) {

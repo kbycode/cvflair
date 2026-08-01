@@ -2,6 +2,28 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **Tema dosyası.** `theme.save("tema.json")` ve `get_theme("tema.json")` —
+  `--theme` de artık hazır bir ad ya da bir `.json` yolu alıyor. Dosyaya
+  yalnızca varsayılandan farklı ayarlar yazılıyor, yani paylaşılan dosya neyin
+  seçildiğini anlatıyor. `Theme.to_dict()` / `Theme.from_dict()` aynı biçimi
+  sözlük olarak veriyor; `get_theme` sözlüğü de kabul ediyor.
+- **Playground'da komut satırı.** Üretilen Python kodunun altında aynı görünümü
+  veren `cvflair` komutu duruyor. Hazır bir temada `--theme neon` yetiyor; özel
+  görünüm bir bayrağa sığmadığı için **tema.json indir** düğmesi dosyayı
+  üretiyor ve komut onu kullanıyor.
+
+### Depo
+- Playground sayfası CI'da denetleniyor
+  ([`tools/check_playground.py`](tools/check_playground.py)): betik `node --check`
+  ile ayrıştırılıyor, sayfadaki çerçeve biçimi / panel konumu / tema listeleri
+  kütüphanedekilerle karşılaştırılıyor ve sayfanın ürettiği tema alanlarının
+  `Theme`'de gerçekten bulunduğu doğrulanıyor. Sayfanın derleme adımı yok: bozuk
+  bir sözdizimi hiçbir yerde hata vermeden yayınlanıyor ve sayfa sessizce boş
+  açılıyordu.
+
 ## 0.11.0 — 2026-08-01
 
 ### Eklendi

@@ -44,6 +44,26 @@ jobs:
       - name: Test
         run: pytest -q
 
+  playground:
+    name: playground sayfası
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Sayfanın derleme adımı yok: bozuk sözdizimi hiçbir yerde hata vermeden
+      # yayınlanır ve sayfa sessizce boş açılır. node runner imajında hazır.
+      - name: Kurulum
+        run: pip install -e .
+
+      - name: Betik ve sabit denetimi
+        run: python tools/check_playground.py
+
   package:
     name: paket doğrulama
     runs-on: ubuntu-latest

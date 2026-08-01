@@ -69,9 +69,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         theme = get_theme(args.theme)
-    except (ValueError, KeyError) as error:
+    except (ValueError, KeyError, OSError) as error:
         print(f"cvflair: {error}", file=sys.stderr)
-        print(f"Tema adları: {', '.join(available_themes())}", file=sys.stderr)
+        # Dosya verildiyse hata dosyayla ilgili; hazır tema adlarını saymanın
+        # bir faydası yok.
+        if not args.theme.lower().endswith(".json"):
+            print(f"Tema adları: {', '.join(available_themes())}", file=sys.stderr)
         return 2
 
     detector = resolve_detector(args.model) if args.model else None

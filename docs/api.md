@@ -38,7 +38,9 @@ Ayrıntı ve komut satırı karşılığı: [komut satırı](komut-satiri.md).
 | `theme.annotate_zone(scene, points, fill_opacity)` | Poligon ya da çizgi çizer |
 | `theme.reset_trace()` | Biriken takip izlerini siler |
 | `theme.annotate_keypoints(scene, keypoints, skeleton)` | İskelet çizer — bkz. [noktalar](noktalar.md) |
-| `get_theme(ad)` / `available_themes()` | Tema adını çözer / mevcut adları listeler |
+| `get_theme(ad \| yol \| sözlük)` / `available_themes()` | Temayı çözer (ad, `.json` yolu ya da sözlük) / adları listeler |
+| `theme.save(yol)` / `Theme.load(yol)` | Temayı JSON olarak yazar / okur |
+| `theme.to_dict()` / `Theme.from_dict(...)` | Düz veriye çevirir / geri kurar; yalnızca varsayılandan farklılar yazılır |
 | `BOX_STYLES` / `HUD_POSITIONS` | Geçerli değerler |
 | `Color`, `ColorPalette`, `ColorLookup` | Renk altyapısı; hex dizgeleri her yerde kabul edilir |
 | `cvflair.annotators` | Dokuz çerçeve biçimi, etiket plakası, iz, nabız ve panel sınıfları |
