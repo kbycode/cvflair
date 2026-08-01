@@ -53,6 +53,9 @@ Kod yazmadan denemek için paketle gelen komut yeter:
 cvflair 0 --theme neon --model yolov8n.pt
 ```
 
+Kaynak olarak kamera, video dosyası, görsel ya da görsel klasörü verilebilir.
+Playground'da ayarlanan görünüm dosyayla taşınır: `--theme theme.json`.
+
 Aynısı Python'dan:
 
 ```python
@@ -88,6 +91,13 @@ from cvflair import HAND_21, KeyPoints
 cam.show(frame, keypoints=KeyPoints(xy=el_noktalari), skeleton=HAND_21)
 ```
 
+![iskeletler](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/skeletons.png)
+
+Yüz modelleri de aynı yoldan geçer: `FACE_5` hepsinin üzerinde anlaştığı beş
+noktayı bağlar — gözler, burun, ağız köşeleri. Kutuyu iki köşe yerine
+`(x, y, w, h)` olarak verenler (OpenCV cascade'leri, MediaPipe)
+`Detections.from_xywh(...)` ve `Detections.from_mediapipe(...)` ile okunur.
+
 ## Belgeler
 
 | | |
@@ -100,13 +110,16 @@ cam.show(frame, keypoints=KeyPoints(xy=el_noktalari), skeleton=HAND_21)
 | [Örnek galerisi](https://github.com/kbycode/cvflair/blob/main/examples/README.md) | On çalışan örnek; hangisi kamera istiyor, hangisi istemiyor |
 | [Katkı rehberi](https://github.com/kbycode/cvflair/blob/main/CONTRIBUTING.md) | Kurulum, kapsam sınırları, yeni tema ekleme adımları |
 
-Kameran yoksa bile çalışan üç örnek var:
+Üçü hiç kamera istemiyor:
 
 ```bash
-python examples/motion_detection.py       # gerçek tespit, sinir ağı yok (kamera ister)
-python examples/theme_preview.py          # kamerasız, her temayı bir PNG'ye çizer
+python examples/theme_preview.py          # her temayı bir PNG'ye çizer
 python examples/video_file.py girdi.mp4   # dosyayı işleyip işaretlenmiş kopyasını yazar
+python examples/image_folder.py klasor/   # bir klasör dolusu görseli işaretler
 ```
+
+Kameran varsa `examples/motion_detection.py` sinir ağı olmadan gerçek tespit
+yapar — yalnızca arka plan çıkarımı, indirilecek bir şey yok.
 
 ## Neden bu tasarım
 

@@ -57,6 +57,9 @@ No code needed -- the package ships a command:
 cvflair 0 --theme neon --model yolov8n.pt
 ```
 
+It reads a camera, a video file, an image or a folder of images. A look tuned in
+the playground travels as a file: `--theme theme.json`.
+
 The same thing from Python:
 
 ```python
@@ -92,6 +95,13 @@ from cvflair import HAND_21, KeyPoints
 cam.show(frame, keypoints=KeyPoints(xy=hand_points), skeleton=HAND_21)
 ```
 
+![skeletons](https://raw.githubusercontent.com/kbycode/cvflair/main/docs/skeletons.png)
+
+Face detectors fit the same way: `FACE_5` connects the five points they agree on
+-- eyes, nose, mouth corners. The ones reporting `(x, y, w, h)` instead of two
+corners, like OpenCV cascades and MediaPipe, go through
+`Detections.from_xywh(...)` and `Detections.from_mediapipe(...)`.
+
 In Jupyter or Colab, where `cv2.imshow` has no window to draw on:
 
 ```python
@@ -115,13 +125,16 @@ The detailed docs are in Turkish; this page and the playground are bilingual.
 | [Example gallery](https://github.com/kbycode/cvflair/blob/main/examples/README.md) | Ten working examples; which need a camera and which do not |
 | [Contributing](https://github.com/kbycode/cvflair/blob/main/CONTRIBUTING.md) | Setup, scope boundaries, how to add a theme |
 
-Three examples run without a camera:
+Three of them need no camera at all:
 
 ```bash
-python examples/motion_detection.py       # real detection, no neural network (needs a camera)
-python examples/theme_preview.py          # no camera; writes a PNG per theme
+python examples/theme_preview.py          # writes a PNG per theme
 python examples/video_file.py input.mp4   # annotates a file into a copy
+python examples/image_folder.py photos/   # annotates a folder of images
 ```
+
+With a camera, `examples/motion_detection.py` gives real detections without a
+neural network -- background subtraction only, nothing to download.
 
 ## Why it is built this way
 
