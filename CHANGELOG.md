@@ -2,6 +2,39 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
+## Yayınlanmamış
+
+### Eklendi
+- **`cvflair` komutu.** Kamerayı, bir videoyu, tek bir görseli ya da bir klasör
+  dolusu görseli kod yazmadan işaretler: `cvflair girdi.mp4 --model yolov8n.pt
+  -o cikti.mp4 --theme neon`. `python -m cvflair` de aynı komut.
+  Bkz. [komut satırı](docs/komut-satiri.md).
+- **`VideoWriter`** — işaretli kareleri dosyaya yazar. Dosya ilk kareyle açılır,
+  boyutu önceden bilmek gerekmez; sonraki kareler farklı boyutta gelirse hata
+  verir (OpenCV bunları sessizce düşürüp dosyayı eksik bırakıyor).
+- `Camera.source_fps` ve `Camera.frame_count` — kaynağın kendi bildirdiği hız ve
+  kare sayısı. İşaretli kopyayı doğru hızda yazmak için gerekiyordu.
+- **Not defteri gösterimi:** `cvflair.notebook.show(frame)` kareyi Jupyter ve
+  Colab hücresinde gösterir; `to_png` de baytları verir. `cv2.imshow` orada
+  çalışmıyor, matplotlib'e geçmek ise BGR/RGB takasını kullanıcıya bırakıyordu.
+  IPython bağımlılık değil, yalnızca çağrıldığında import ediliyor.
+- **`KeyPoints.from_mediapipe(...)`** — MediaPipe'in el ve poz sonucunu okur.
+  Eski `solutions` ve yeni `tasks` API'leri ile düz nokta listesi kabul edilir;
+  ölçekleme burada yapılır. MediaPipe import edilmiyor, alanlar adlarıyla
+  okunuyor.
+
+### Düzeltildi
+- **Video dosyasının son karesi kayboluyordu.** Okuyucu tüketiciden bir adım
+  önde bittiği için, kaynak tükendiğinde kuyrukta bekleyen kare işlenmeden
+  döngü kapanıyordu; 40 karelik bir dosya 39 kare olarak yazılıyordu. Artık
+  kaynak bittiğinde kuyruk boşaltılıyor, kullanıcı çıktığında ise
+  boşaltılmıyor — o durumda bekleyen kare işlenmemeli.
+
+### Depo
+- `__all__` ile gerçekten dışa aktarılanları karşılaştıran test. Bir ad `__all__`
+  listesine eklenip import'u unutulduğunda hata ancak kullanıcı o adı çağırınca
+  çıkıyordu; ruff bunu `__init__.py` içinde yakalamıyor.
+
 ## 0.10.0 — 2026-08-01
 
 ### Eklendi

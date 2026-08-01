@@ -15,8 +15,19 @@
 | `cam.measured_fps` | Son 30 karenin ortalamasıyla ölçülen gerçek kare hızı |
 | `cam.frames_read` / `cam.frames_dropped` | Okunan ve tüketici yetişemediği için atılan kare sayısı |
 | `cam.drop_frames` | `True` canlı kamera için, `False` video dosyası için |
+| `cam.source_fps` / `cam.frame_count` | Kaynağın kendi bildirdiği hız ve kare sayısı; kamerada `0` |
 
 `Camera` bağlam yöneticisi olarak da kullanılabilir: `with Camera() as cam: ...`
+
+## Video yazma
+
+| Üye | Ne yapar |
+|---|---|
+| `VideoWriter(path, fps, codec)` | İşaretli kareleri dosyaya yazar; dosya ilk kareyle açılır |
+| `writer.write(frame)` / `writer.close()` | Kare yazar / dosyayı kapatır (`with` de çalışır) |
+| `writer.frames_written` / `writer.size` | Yazılan kare sayısı, dosyanın boyutu |
+
+Ayrıntı ve komut satırı karşılığı: [komut satırı](komut-satiri.md).
 
 ## Tema ve çizim
 
@@ -32,12 +43,36 @@
 | `Color`, `ColorPalette`, `ColorLookup` | Renk altyapısı; hex dizgeleri her yerde kabul edilir |
 | `cvflair.annotators` | Dokuz çerçeve biçimi, etiket plakası, iz, nabız ve panel sınıfları |
 
+## Not defteri
+
+`cv2.imshow` Jupyter ve Colab'da çalışmaz: pencere açacak bir masaüstü yok, çağrı
+ya hiçbir şey yapmaz ya da çekirdeği düşürür. Bilinen çözüm matplotlib artı kanal
+çevirmedir; OpenCV pikselleri BGR tuttuğu için çevirmeyi atlayan kırmızıyla maviyi
+takas etmiş bir görüntü alır.
+
+```python
+import cvflair
+
+theme.annotate(frame, detections)
+cvflair.notebook.show(frame)
+```
+
+| Üye | Ne yapar |
+|---|---|
+| `notebook.show(frame, bgr=True, width=None)` | Kareyi hücrede gösterir, görüntü nesnesini döndürür |
+| `notebook.to_png(frame, bgr=True)` | PNG baytları; dosyaya yazmak ya da başka yere göndermek için |
+| `notebook.in_notebook()` | Çekirdek içinde miyiz |
+
+Not defteri dışında `show` çizmez, yalnızca nesneyi döndürür — aynı betik iki
+yerde de çalışır. IPython bir bağımlılık değil; yalnızca çağrıldığında import
+edilir.
+
 ## Tespit ve model
 
 | Üye | Ne yapar |
 |---|---|
 | `Detections(xyxy, class_id, confidence, names, tracker_id)` | Kutu taşıyıcısı — bkz. [modeller](modeller.md) |
-| `KeyPoints(xy, confidence, class_id)` | Nokta taşıyıcısı; `from_normalized` yardımcısıyla |
+| `KeyPoints(xy, confidence, class_id)` | Nokta taşıyıcısı; `from_normalized` ve `from_mediapipe` yardımcılarıyla |
 | `HAND_21` / `POSE_17` / `SKELETONS` | Hazır iskelet topolojileri |
 | `UltralyticsDetector(model, **kwargs)` | Ultralytics çıktısını `Detections`'a çevirir |
 | `load_ultralytics(weights, **kwargs)` | Ağırlık dosyasını yükler; extra eksikse açıklayıcı hata verir |

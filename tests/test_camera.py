@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import cv2
 import numpy as np
 import pytest
@@ -173,3 +175,31 @@ def test_backpressure_keeps_every_frame(camera_factory):
 
     assert markers == list(range(1, 26))
     assert camera.frames_dropped == 0
+
+
+def test_last_frame_survives_a_slow_consumer(camera_factory):
+    """
+    Okuyucu tüketiciden bir adım önde bitiyor: kaynak tükendiğinde kuyrukta
+    bekleyen son kare hâlâ tüketilmeli. Tüketici yavaşlatılmasa okuyucu son
+    kareyi kimse almadan bırakır ve kayıp gözle görünmezdi.
+    """
+    camera, _ = camera_factory(frame_count=4, drop_frames=False)
+
+    markers = []
+    for frame in camera.stream(timeout=2.0):
+        markers.append(frame_marker(frame))
+        time.sleep(0.05)  # okuyucunun bitirmesine zaman tanı
+
+    assert markers == [1, 2, 3, 4], "son kare düştü"
+
+
+def test_quitting_leaves_the_queued_frame_alone(camera_factory):
+    """Kullanıcı çıktığında kuyruktaki kare işlenmemeli -- dosya sonundan farklı."""
+    camera, _ = camera_factory(frame_count=10, drop_frames=False)
+
+    seen = 0
+    for _ in camera.stream(timeout=2.0):
+        seen += 1
+        camera._stop_event.set()  # show() çıkışta bunu yapıyor
+
+    assert seen == 1, "çıkıştan sonra kare işlenmiş"

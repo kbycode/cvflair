@@ -16,6 +16,7 @@ Detections may be cvflair's own :class:`~cvflair.detections.Detections`, a
 
 from __future__ import annotations
 
+from . import notebook
 from .annotators import (
     HUD_POSITIONS,
     BlurAnnotator,
@@ -44,10 +45,12 @@ from .detections import Detections
 from .keypoints import HAND_21, POSE_17, SKELETONS, KeyPoints, Skeleton
 from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_detector
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
+from .video import VideoWriteError, VideoWriter
 
 __version__ = "0.10.0"
 
 __all__ = [
+    "notebook",
     "BOX_STYLES",
     "BlurAnnotator",
     "ZoneAnnotator",
@@ -87,5 +90,7 @@ __all__ = [
     "get_theme",
     "load_ultralytics",
     "resolve_detector",
+    "VideoWriter",
+    "VideoWriteError",
     "__version__",
 ]

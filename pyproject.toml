@@ -50,6 +50,9 @@ release = [
     "twine>=5.0",
 ]
 
+[project.scripts]
+cvflair = "cvflair.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/kbycode/cvflair"
 Documentation = "https://github.com/kbycode/cvflair#readme"
@@ -77,9 +80,10 @@ files = ["src/cvflair"]
 warn_unused_ignores = true
 warn_redundant_casts = true
 
-# Ultralytics isteğe bağlı bir extra; tip bilgisi olmadan tembel import ediliyor.
+# İkisi de isteğe bağlı: paket bunlar kurulu olmadan çalışıyor, import'lar
+# kullanıldıkları yerde ve tembel.
 [[tool.mypy.overrides]]
-module = ["ultralytics.*"]
+module = ["ultralytics.*", "IPython.*"]
 ignore_missing_imports = true
 
 [tool.ruff]

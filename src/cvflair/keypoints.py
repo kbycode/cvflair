@@ -114,8 +114,106 @@ class KeyPoints:
         scaled = np.asarray(xy, dtype=np.float32) * np.array([width, height], dtype=np.float32)
         return cls(xy=scaled, **fields)
 
+    @classmethod
+    def from_mediapipe(cls, result: Any, width: int, height: int) -> KeyPoints:
+        """
+        Read a MediaPipe hand or pose result.
+
+        Both API generations are accepted -- the legacy ``solutions`` result
+        (``multi_hand_landmarks`` / ``pose_landmarks``), the Tasks API result
+        (``hand_landmarks`` / ``pose_landmarks``), and a bare list of landmark
+        lists. MediaPipe is not imported here; the fields are read by name, so
+        the package keeps its two dependencies.
+
+        Coordinates are normalised at the source and scaled with ``width`` and
+        ``height``::
+
+            points = KeyPoints.from_mediapipe(result, *frame.shape[1::-1])
+            cam.show(frame, keypoints=points, skeleton=HAND_21)
+        """
+        groups = _landmark_groups(result)
+        if not groups:
+            return cls.empty()
+
+        xy = np.array(
+            [[(point.x * width, point.y * height) for point in group] for group in groups],
+            dtype=np.float32,
+        )
+        return cls(xy=xy, confidence=_landmark_confidence(groups))
+
     def __repr__(self) -> str:
         return f"KeyPoints({len(self)} skeletons, {self.point_count} points)"
+
+
+#: MediaPipe'in nokta listesini sakladığı alanlar; sürümden sürüme adı değişiyor.
+_LANDMARK_FIELDS = (
+    "multi_hand_landmarks",  # solutions.hands
+    "hand_landmarks",        # tasks vision HandLandmarker
+    "pose_landmarks",        # her ikisi de; solutions'ta tek iskelet
+    "face_landmarks",
+)
+
+
+def _landmark_groups(result: Any) -> list[Any]:
+    """Elindeki sonuçtan iskelet başına nokta listelerini çıkarır."""
+    if result is None:
+        return []
+
+    recognised = False
+    for field in _LANDMARK_FIELDS:
+        if not hasattr(result, field):
+            continue
+        # Alan varsa sonuç MediaPipe'in kendi nesnesi; içi boşsa o karede bir şey
+        # bulunamamış demektir. Bu en sık karşılaşılan durum ve boş dönmeli.
+        recognised = True
+        value = getattr(result, field)
+        if value:
+            return _as_groups(value)
+
+    if recognised:
+        return []
+    return _as_groups(result) if result else []
+
+
+def _as_groups(value: Any) -> list[Any]:
+    """Tek iskelet mi, iskelet listesi mi olduğunu ayırır."""
+    # solutions API'si noktaları `.landmark` altında bir sarmalayıcıda veriyor,
+    # tasks API'si düz liste. İkisi de gelebilir, iç içe de gelebilir.
+    holder = getattr(value, "landmark", None)
+    if holder is not None:
+        return [list(holder)]
+
+    try:
+        items = list(value)
+    except TypeError:
+        raise TypeError(
+            f"MediaPipe sonucu tanınmadı: {type(value).__name__}. Beklenen, "
+            "landmark listesi ya da onu taşıyan bir sonuç nesnesi."
+        ) from None
+    if not items:
+        return []
+    if hasattr(items[0], "x"):  # tek iskeletin noktaları
+        return [items]
+    return [_as_groups(item)[0] for item in items if _as_groups(item)]
+
+
+def _landmark_confidence(groups: list[Any]) -> np.ndarray | None:
+    """
+    Görünürlük değerlerini toplar, hepsi sıfırsa vazgeçer.
+
+    El modeli görünürlük doldurmuyor: alan var ama sıfır kalıyor. Bunu güven
+    diye aktarmak eşiğin altında kaldığı için bütün noktaları görünmez yapardı.
+    """
+    scores = []
+    for group in groups:
+        row = [
+            getattr(point, "visibility", None) or getattr(point, "presence", None) or 0.0
+            for point in group
+        ]
+        scores.append(row)
+
+    values = np.array(scores, dtype=np.float32)
+    return values if values.any() else None
 
 
 def is_keypoints(value: Any) -> bool:

@@ -93,3 +93,26 @@ kullanımını gösteriyor.
 kamera görüntüsünün üzerine açılıp kapanan 21 noktalı bir el çizer. El sentetiktir
 (ek kurulum gerekmesin diye); gerçek bir elde tek fark noktaların nereden geldiği,
 örneğin MediaPipe bağlantısı dosyanın başında yazılı.
+
+## MediaPipe sonucunu okumak
+
+MediaPipe noktaları 0-1 aralığında verir ve iki farklı API sürümünde iki farklı
+alanda tutar. `from_mediapipe` ikisini de okur, ölçeklemeyi de kendisi yapar:
+
+```python
+from cvflair import HAND_21, KeyPoints
+
+sonuc = eller.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+points = KeyPoints.from_mediapipe(sonuc, *frame.shape[1::-1])
+cam.show(frame, keypoints=points, skeleton=HAND_21)
+```
+
+Eski `solutions` sonucu (`multi_hand_landmarks`, `pose_landmarks`), yeni `tasks`
+sonucu (`hand_landmarks`) ve düz nokta listesi kabul edilir. Karede el ya da
+gövde bulunamadığında boş `KeyPoints` döner, çizim de yapılmaz.
+
+MediaPipe bir bağımlılık değil: alanlar adlarıyla okunur, paket onu import etmez.
+
+Görünürlük değeri varsa güven olarak taşınır. El modeli bu alanı doldurmaz —
+sıfır bırakır — ve sıfır güven eşiğin altında kaldığı için tek bir nokta bile
+çizilmezdi; bu yüzden baştan sona sıfır olan bir sütun yok sayılır.

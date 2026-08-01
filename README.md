@@ -45,6 +45,14 @@ pip install "cvflair[yolo]"
 
 ## Hızlı başlangıç
 
+Kod yazmadan denemek için paketle gelen komut yeter:
+
+```bash
+cvflair 0 --theme neon --model yolov8n.pt
+```
+
+Aynısı Python'dan:
+
 ```python
 from cvflair import Camera
 
@@ -83,6 +91,7 @@ cam.show(frame, keypoints=KeyPoints(xy=el_noktalari), skeleton=HAND_21)
 | | |
 |---|---|
 | [Temalar ve çerçeve biçimleri](https://github.com/kbycode/cvflair/blob/main/docs/temalar.md) | Beş tema, dokuz biçim, nabız ve iz, ikinci renk, renk paleti, sayaç paneli, kendi temanı yazmak |
+| [Komut satırı ve video yazma](https://github.com/kbycode/cvflair/blob/main/docs/komut-satiri.md) | `cvflair` komutu, kaynaklar ve seçenekler, `VideoWriter` |
 | [Nokta ve iskelet çizimi](https://github.com/kbycode/cvflair/blob/main/docs/noktalar.md) | El ve poz iskeletleri, `KeyPoints`, hazır topolojiler, kendi iskeletin |
 | [Model bağlama ve tespitler](https://github.com/kbycode/cvflair/blob/main/docs/modeller.md) | `stream(model=...)`, kendi detektörün, `Detections`, Ultralytics ayarları, video dosyaları |
 | [API özeti ve iç işleyiş](https://github.com/kbycode/cvflair/blob/main/docs/api.md) | Bütün genel arayüz, thread ve kuyruk davranışı, ölçülmüş performans |

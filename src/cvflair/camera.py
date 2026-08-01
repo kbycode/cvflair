@@ -79,6 +79,9 @@ class Camera:
         self._thread: threading.Thread | None = None
         self._queue: queue.Queue[np.ndarray] = queue.Queue(maxsize=1)
         self._stop_event = threading.Event()
+        # Durmanın iki sebebi var ve sonuçları farklı: kaynak bittiyse kuyrukta
+        # bekleyen kare hâlâ tüketilmeli, kullanıcı çıktıysa tüketilmemeli.
+        self._source_ended = threading.Event()
         self._window_open = False
         self._last_key = -1
         self._frames_read = 0
@@ -111,6 +114,28 @@ class Camera:
         return self._frames_dropped
 
     @property
+    def source_fps(self) -> float:
+        """
+        Frames per second the source itself reports, or ``0.0``.
+
+        A video file knows its own rate and this is how to write the annotated
+        copy at the right speed. Webcams often report nothing useful, so treat
+        a zero as "unknown" rather than an error.
+        """
+        if self._capture is None:
+            return 0.0
+        rate = float(self._capture.get(cv2.CAP_PROP_FPS))
+        return rate if rate > 0 and rate < 1000 else 0.0
+
+    @property
+    def frame_count(self) -> int:
+        """Frames the source claims to hold; ``0`` for a live camera."""
+        if self._capture is None:
+            return 0
+        total = int(self._capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        return max(total, 0)
+
+    @property
     def measured_fps(self) -> float:
         """
         Frames actually consumed per second, averaged over the last 30.
@@ -141,6 +166,7 @@ class Camera:
 
         self._capture = capture
         self._stop_event.clear()
+        self._source_ended.clear()
         self._thread = threading.Thread(
             target=self._read_loop, name=f"cvflair-reader-{self.source}", daemon=True
         )
@@ -162,6 +188,7 @@ class Camera:
         while not self._stop_event.is_set():
             ok, frame = capture.read()
             if not ok or frame is None:
+                self._source_ended.set()
                 break  # end of file, or the device went away
             self._frames_read += 1
             self._publish(frame)
@@ -262,13 +289,26 @@ class Camera:
         detector = resolve_detector(model)
         self.start()
         try:
-            while not self._stop_event.is_set():
+            while not self._finished():
                 frame = self.read(timeout=timeout)
                 if frame is None:
                     break
                 yield frame if detector is None else (frame, detector(frame))
         finally:
             self.close()
+
+    def _finished(self) -> bool:
+        """
+        Whether the loop has nothing left to do.
+
+        The reader stops one step ahead of the consumer, so when a file ends
+        there is still a frame waiting in the queue -- quitting on the stop
+        event alone silently loses it. A user pressing ``q`` is different: what
+        is queued then should not be processed.
+        """
+        if not self._stop_event.is_set():
+            return False
+        return not self._source_ended.is_set() or self._queue.empty()
 
     # -- output ----------------------------------------------------------
 
