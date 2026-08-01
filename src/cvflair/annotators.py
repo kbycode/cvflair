@@ -761,21 +761,26 @@ _OVAL_CACHE: dict[tuple[int, int], np.ndarray] = {}
 _OVAL_CACHE_LIMIT = 64
 
 
-def _oval_mask(shape: tuple[int, int]) -> np.ndarray:
-    """Dikdörtgene içten teğet, kenarı yumuşatılmış oval maske."""
-    cached = _OVAL_CACHE.get(shape)
+def _oval_mask(height: int, width: int) -> np.ndarray:
+    """
+    Dikdörtgene içten teğet, kenarı yumuşatılmış oval maske.
+
+    Ölçüler ayrı ayrı alınıyor: ``array.shape[:2]`` numpy sürümüne göre
+    ``tuple[int, ...]`` olarak tipleniyor ve tip denetimi ortama göre farklı
+    sonuç veriyor.
+    """
+    cached = _OVAL_CACHE.get((height, width))
     if cached is not None:
         return cached
 
-    height, width = shape
-    mask = np.zeros(shape, dtype=np.uint8)
+    mask = np.zeros((height, width), dtype=np.uint8)
     cv2.ellipse(
         mask, (width // 2, height // 2), (max(width // 2 - 1, 1), max(height // 2 - 1, 1)),
         0, 0, 360, 255, -1, cv2.LINE_AA,
     )
     if len(_OVAL_CACHE) >= _OVAL_CACHE_LIMIT:
         _OVAL_CACHE.clear()
-    _OVAL_CACHE[shape] = mask
+    _OVAL_CACHE[(height, width)] = mask
     return mask
 
 
@@ -818,7 +823,7 @@ class BlurAnnotator:
             region = scene[y1:y2, x1:x2]
             hidden = self._pixelate(region) if self.mode == "pixelate" else self._blur(region)
             if self.shape == "ellipse":
-                cv2.copyTo(hidden, _oval_mask(region.shape[:2]), region)
+                cv2.copyTo(hidden, _oval_mask(region.shape[0], region.shape[1]), region)
             else:
                 scene[y1:y2, x1:x2] = hidden
         return scene

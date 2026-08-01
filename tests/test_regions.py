@@ -215,6 +215,6 @@ def test_mask_cache_does_not_grow_without_bound():
 
     _OVAL_CACHE.clear()
     for size in range(4, 4 + _OVAL_CACHE_LIMIT * 2):
-        _oval_mask((size, size))
+        _oval_mask(size, size)
 
     assert len(_OVAL_CACHE) <= _OVAL_CACHE_LIMIT
