@@ -21,7 +21,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from cvflair import BOX_STYLES, available_themes
+from cvflair import BOX_STYLES, Theme, available_themes
 from cvflair.annotators import HUD_POSITIONS
 
 PAGE = Path(__file__).resolve().parents[1] / "docs" / "index.html"
@@ -86,6 +86,75 @@ def check_constants(script: str) -> list[str]:
     return problems
 
 
+def block_of(script: str, name: str) -> str:
+    """`const NAME = { ... };` bloğunu süslü parantezleri sayarak çıkarır."""
+    start = script.index(f"const {name} = {{")
+    depth = 0
+    for index in range(script.index("{", start), len(script)):
+        depth += {"{": 1, "}": -1}.get(script[index], 0)
+        if depth == 0:
+            return script[start : index + 1] + ";"
+    raise SystemExit(f"{name} bloğu kapanmıyor.")
+
+
+def page_themes(script: str) -> dict[str, dict] | None:
+    """Sayfadaki tema tanımlarını node ile okur; node yoksa None."""
+    node = shutil.which("node")
+    if node is None:
+        return None
+
+    source = "\n".join(
+        [block_of(script, name) for name in ("DEFAULTS", "PRESETS", "DEFAULT_STATE")]
+        + ["console.log(JSON.stringify({...PRESETS, _start: DEFAULT_STATE}));"]
+    )
+    with tempfile.TemporaryDirectory() as folder:
+        target = Path(folder) / "themes.js"
+        target.write_text(source, encoding="utf-8")
+        result = subprocess.run([node, str(target)], capture_output=True, text=True)
+    if result.returncode:
+        raise SystemExit(f"Tema tanımları okunamadı:\n{result.stderr.strip()}")
+    return dict(json.loads(result.stdout))
+
+
+#: Sayfadaki ad -> Theme alanı; gerisi camelCase'den kendiliğinden çözülüyor.
+SPECIAL_KEYS = {"accent": "accent_palette", "preview": None}
+
+
+def to_theme_kwargs(settings: dict) -> dict:
+    kwargs = {}
+    for key, value in settings.items():
+        field = SPECIAL_KEYS.get(key, re.sub(r"([A-Z])", lambda m: "_" + m.group(1), key).lower())
+        if field is None:
+            continue
+        kwargs[field] = value
+    return kwargs
+
+
+def check_themes_build(script: str) -> list[str]:
+    """
+    Sayfadaki her hazır tema ve açılış görünümü Python'da gerçekten kurulabiliyor mu.
+
+    Sayfa ayarları kendi adlarıyla tutuyor; bir alan yeniden adlandırılır ya da
+    değer aralığı daralırsa sayfa yine çizmeye devam eder, kopyalanan kod ise
+    kullanıcının makinesinde patlar.
+    """
+    themes = page_themes(script)
+    if themes is None:
+        print("node bulunamadı, tema kurulumu denenmedi")
+        return []
+
+    problems = []
+    for name, settings in themes.items():
+        kwargs = to_theme_kwargs(settings)
+        try:
+            Theme(name=name, **kwargs)
+        except Exception as error:  # noqa: BLE001 - hepsi rapor ediliyor
+            problems.append(f"{name} teması kurulamıyor: {error}")
+    if not problems:
+        print(f"tema kurulumu: {len(themes)} tanım Python'da kuruluyor")
+    return problems
+
+
 def check_theme_fields(script: str) -> list[str]:
     """`themeSettings()` içindeki alan adları Theme'de gerçekten var mı."""
     from cvflair.themes import _FIELD_SET
@@ -106,7 +175,12 @@ def main() -> int:
     html = PAGE.read_text(encoding="utf-8")
     script = script_of(html)
 
-    problems = check_syntax(script) + check_constants(script) + check_theme_fields(script)
+    problems = (
+        check_syntax(script)
+        + check_constants(script)
+        + check_theme_fields(script)
+        + check_themes_build(script)
+    )
     if problems:
         print("\n".join(f"HATA: {problem}" for problem in problems), file=sys.stderr)
         return 1
