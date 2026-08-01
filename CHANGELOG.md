@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.13.0 — 2026-08-01
 
 ### Eklendi
 - **`Detections.from_xywh(...)`** — köşe ve boyut veren kutuları okur. OpenCV
