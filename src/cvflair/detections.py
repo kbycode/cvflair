@@ -111,15 +111,21 @@ class Detections:
         Pass ``width`` and ``height`` when the model reports 0-1 coordinates
         relative to the frame, as MediaPipe does; the scaling happens here.
         """
-        values = np.asarray(boxes, dtype=np.float32).reshape(-1, 4)
         if (width is None) != (height is None):
             raise ValueError("width and height go together; give both or neither.")
-        if width is not None and height is not None:
-            values = values * np.array([width, height, width, height], dtype=np.float32)
 
-        xyxy = np.column_stack(
-            [values[:, 0], values[:, 1], values[:, 0] + values[:, 2], values[:, 1] + values[:, 3]]
-        )
+        values = np.asarray(boxes, dtype=np.float32).reshape(-1, 4)
+        # Ölçek diziyi yeniden atamak yerine sütunlara uygulanıyor: numpy'nin tip
+        # bilgisi çarpımda (N, 4) şeklini kaybediyor ve atama, stub sürümüne göre
+        # tip denetiminde hata verebiliyor.
+        scale_x, scale_y = (1.0, 1.0) if width is None or height is None else (width, height)
+
+        xyxy = np.column_stack([
+            values[:, 0] * scale_x,
+            values[:, 1] * scale_y,
+            (values[:, 0] + values[:, 2]) * scale_x,
+            (values[:, 1] + values[:, 3]) * scale_y,
+        ])
         return cls(xyxy=xyxy, **fields)
 
     @classmethod
