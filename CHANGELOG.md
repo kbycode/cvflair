@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.12.0 — 2026-08-01
 
 ### Eklendi
 - **Tema dosyası.** `theme.save("theme.json")` ve `get_theme("theme.json")` —

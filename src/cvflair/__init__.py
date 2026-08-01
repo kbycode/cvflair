@@ -47,7 +47,7 @@ from .models import Detector, UltralyticsDetector, load_ultralytics, resolve_det
 from .themes import BOX_STYLES, Theme, available_themes, get_theme
 from .video import VideoWriteError, VideoWriter
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 __all__ = [
     "notebook",
