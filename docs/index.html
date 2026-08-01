@@ -204,6 +204,7 @@
           <button data-value="bracket" type="button" data-i18n="style.bracket"></button>
           <button data-value="crosshair" type="button" data-i18n="style.crosshair"></button>
           <button data-value="target" type="button" data-i18n="style.target"></button>
+          <button data-value="sketch" type="button" data-i18n="style.sketch"></button>
         </div>
       </div>
       <div class="row">
@@ -234,6 +235,10 @@
         <label class="title" for="centerSize"><span data-i18n="field.centerSize"></span> <b id="centerSizeOut"></b></label>
         <input type="range" id="centerSize" min="0" max="40" step="1">
       </div>
+      <div class="row" data-only="sketch">
+        <label class="title" for="wobble"><span data-i18n="field.wobble"></span> <b id="wobbleOut"></b></label>
+        <input type="range" id="wobble" min="0" max="8" step="0.5">
+      </div>
       <div class="row" data-only="target">
         <label class="title" for="edgeThickness"><span data-i18n="field.edgeThickness"></span> <b id="edgeThicknessOut"></b></label>
         <input type="range" id="edgeThickness" min="1" max="6" step="1">
@@ -244,6 +249,25 @@
       <div class="row" data-only="accent">
         <label class="title" for="accent"><span data-i18n="field.accent"></span> <b id="accentOut"></b></label>
         <input type="color" id="accent">
+      </div>
+    </div>
+
+    <div class="panel" data-only="mode:boxes">
+      <h2 data-i18n="section.motion"></h2>
+      <p class="hint" data-i18n="motion.hint"></p>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="pulse"> <span data-i18n="switch.pulse"></span></label>
+      </div>
+      <div class="row" data-only="pulse">
+        <label class="title" for="pulseReach"><span data-i18n="field.pulseReach"></span> <b id="pulseReachOut"></b></label>
+        <input type="range" id="pulseReach" min="4" max="40" step="1">
+      </div>
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="trace"> <span data-i18n="switch.trace"></span></label>
+      </div>
+      <div class="row" data-only="trace">
+        <label class="title" for="traceLength"><span data-i18n="field.traceLength"></span> <b id="traceLengthOut"></b></label>
+        <input type="range" id="traceLength" min="4" max="80" step="1">
       </div>
     </div>
 
@@ -358,6 +382,8 @@ const DEFAULTS = {
   palette: ["#ffffff"], accent: null,
   boxStyle: "box", thickness: 2, roundness: 0.5, cornerLength: 20,
   dashLength: 12, gapLength: 8, armLength: 18, centerSize: 10, edgeThickness: 1,
+  wobble: 2.5,
+  pulse: false, pulseReach: 14, trace: false, traceLength: 32,
   glow: false, glowThickness: 5, glowDim: 0.45,
   labels: true, textColor: "#000000", textScale: 0.5, textPadding: 6, labelRadius: 0,
   hud: false, hudPosition: "top_left", hudOpacity: 0.6,
@@ -404,6 +430,7 @@ const PRESETS = {
 const URL_KEYS = {
   p: "palette", a: "accent", s: "boxStyle", t: "thickness", r: "roundness", c: "cornerLength",
   dl: "dashLength", gl: "gapLength", al: "armLength", cs: "centerSize", et: "edgeThickness",
+  w: "wobble", pl: "pulse", pk: "pulseReach", tr: "trace", tn: "traceLength",
   pt: "poseThickness", pr: "poseRadius", pv: "preview",
   g: "glow", gt: "glowThickness", gd: "glowDim",
   l: "labels", tc: "textColor", ts: "textScale", tp: "textPadding", lr: "labelRadius",
@@ -412,6 +439,7 @@ const URL_KEYS = {
 const HUD_POSITIONS = ["top_left", "top_right", "bottom_left", "bottom_right"];
 const BOX_STYLES = [
   "box", "round", "corner", "dashed", "dashed_corner", "bracket", "crosshair", "target",
+  "sketch",
 ];
 const CORNER_STYLES = ["corner", "dashed_corner", "bracket", "target"];
 const DASH_STYLES = ["dashed", "dashed_corner"];
@@ -453,6 +481,13 @@ const I18N = {
     "field.armLength": "Arm length",
     "field.centerSize": "Centre cross",
     "field.edgeThickness": "Edge thickness",
+    "field.wobble": "Wobble",
+    "section.motion": "Motion",
+    "motion.hint": "Both need the preview running. In Python the trace needs tracker ids from your tracker — cvflair draws the path, it does not track.",
+    "switch.pulse": "Lock-on pulse",
+    "field.pulseReach": "Ring reach",
+    "switch.trace": "Trace",
+    "field.traceLength": "Trace length",
     "field.glowThickness": "Halo thickness",
     "field.glowDim": "Halo darkness",
     "field.textScale": "Text scale",
@@ -470,6 +505,7 @@ const I18N = {
     "style.bracket": "bracket",
     "style.crosshair": "crosshair",
     "style.target": "target",
+    "style.sketch": "sketch",
     "switch.glow": "Draw halo",
     "switch.labels": "Draw labels",
     "switch.hud": "Draw panel",
@@ -527,6 +563,13 @@ const I18N = {
     "field.armLength": "Kol uzunluğu",
     "field.centerSize": "Merkez artı",
     "field.edgeThickness": "Çerçeve kalınlığı",
+    "field.wobble": "Titreşim",
+    "section.motion": "Hareket",
+    "motion.hint": "İkisi de önizleme oynarken görünür. Python tarafında iz, takip edicinin verdiği kimlikleri ister — cvflair yolu çizer, takip etmez.",
+    "switch.pulse": "Kilitlenme nabzı",
+    "field.pulseReach": "Halka açıklığı",
+    "switch.trace": "İz",
+    "field.traceLength": "İz uzunluğu",
     "field.glowThickness": "Hâle kalınlığı",
     "field.glowDim": "Hâle koyuluğu",
     "field.textScale": "Yazı ölçeği",
@@ -544,6 +587,7 @@ const I18N = {
     "style.bracket": "ayraç",
     "style.crosshair": "artı",
     "style.target": "hedef",
+    "style.sketch": "eskiz",
     "switch.glow": "Hâle çiz",
     "switch.labels": "Etiket çiz",
     "switch.hud": "Paneli çiz",
@@ -733,7 +777,7 @@ function readUrl() {
       if (["boxes", "skeleton"].includes(raw)) state.preview = raw;
     } else if (field === "hudPosition") {
       if (HUD_POSITIONS.includes(raw)) state.hudPosition = raw;
-    } else if (field === "glow" || field === "labels" || field === "hud") {
+    } else if (["glow", "labels", "hud", "pulse", "trace"].includes(field)) {
       state[field] = raw === "1" || raw === "true";
     } else {
       const number = Number(raw);
@@ -753,6 +797,9 @@ function clampState() {
   state.armLength = clamp(Math.round(state.armLength), 4, 60);
   state.centerSize = clamp(Math.round(state.centerSize), 0, 40);
   state.edgeThickness = clamp(Math.round(state.edgeThickness), 1, 6);
+  state.wobble = clamp(state.wobble, 0, 8);
+  state.pulseReach = clamp(Math.round(state.pulseReach), 4, 40);
+  state.traceLength = clamp(Math.round(state.traceLength), 4, 80);
   state.glowThickness = clamp(Math.round(state.glowThickness), 1, 20);
   state.glowDim = clamp(state.glowDim, 0.1, 0.9);
   state.hudOpacity = clamp(state.hudOpacity, 0.1, 1);
@@ -788,6 +835,15 @@ function shareUrl() {
     params.set("cs", String(state.centerSize));
   }
   if (state.boxStyle === "target") params.set("et", String(state.edgeThickness));
+  if (state.boxStyle === "sketch") params.set("w", String(state.wobble));
+  if (state.pulse) {
+    params.set("pl", "1");
+    params.set("pk", String(state.pulseReach));
+  }
+  if (state.trace) {
+    params.set("tr", "1");
+    params.set("tn", String(state.traceLength));
+  }
   params.set("g", state.glow ? "1" : "0");
   if (state.glow) {
     params.set("gt", String(state.glowThickness));
@@ -862,6 +918,21 @@ function pythonCode() {
   }
   if (!skeletonMode && state.boxStyle === "target" && state.edgeThickness !== DEFAULTS.edgeThickness) {
     lines.push("    edge_thickness=" + state.edgeThickness + ",");
+  }
+  if (!skeletonMode && state.boxStyle === "sketch" && state.wobble !== DEFAULTS.wobble) {
+    lines.push("    wobble=" + state.wobble + ",");
+  }
+  if (!skeletonMode && state.pulse) {
+    lines.push("    pulse=True,");
+    if (state.pulseReach !== DEFAULTS.pulseReach) {
+      lines.push("    pulse_reach=" + state.pulseReach + ",");
+    }
+  }
+  if (!skeletonMode && state.trace) {
+    lines.push("    trace=True,");
+    if (state.traceLength !== DEFAULTS.traceLength) {
+      lines.push("    trace_length=" + state.traceLength + ",");
+    }
   }
   if (state.glow) {
     lines.push("    glow=True,");
@@ -1068,7 +1139,117 @@ function strokeBox(box, colour, thickness, accent) {
     return;
   }
 
+  if (state.boxStyle === "sketch") {
+    strokeSketch(box, thickness);
+    return;
+  }
+
   ctx.strokeRect(x1, y1, width, height);
+}
+
+// Tohumlu üreteç: aynı kutu her karede aynı titriyor. Math.random() ile desen
+// kare kare değişir ve ekranda kaynar.
+function seededRandom(seed) {
+  let value = seed >>> 0;
+  return () => {
+    value = (value + 0x6d2b79f5) >>> 0;
+    let t = value;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Python tarafıyla aynı kurgu: konum sekizer piksellik ızgaraya yuvarlanıyor,
+// böylece kutunun bir iki piksel oynaması deseni bozmuyor.
+function strokeSketch(box, thickness) {
+  const [x1, y1, x2, y2] = box;
+  const grid = [Math.abs(x1) >> 3, Math.abs(y1) >> 3, Math.abs(x2) >> 3];
+  const random = seededRandom((grid[0] * 73856093) ^ (grid[1] * 19349663) ^ (grid[2] * 83492791));
+  const corners = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+  const steps = Math.min(Math.max(Math.floor(Math.max(x2 - x1, y2 - y1) / 18), 3), 16);
+
+  ctx.lineWidth = thickness;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let edge = 0; edge < 4; edge += 1) {
+      const [sx, sy] = corners[edge];
+      const [ex, ey] = corners[(edge + 1) % 4];
+      for (let step = 0; step <= steps; step += 1) {
+        const ratio = step / steps;
+        const drift = step === 0 || step === steps
+          ? 0
+          : (random() * 2 - 1) * state.wobble;
+        const px = sx + (ex - sx) * ratio + drift;
+        const py = sy + (ey - sy) * ratio + drift;
+        if (step === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+    }
+  }
+  ctx.stroke();
+}
+
+// Kilitlenme halkası: evre ilerledikçe kutudan uzaklaşıp sönüyor.
+function strokePulse(box, colour) {
+  const phase = (sceneTime * 1.4) % 1;
+  const grow = state.pulseReach * phase;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.05, 1 - phase);
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = Math.max(1, state.thickness - 1);
+  ctx.strokeRect(box[0] - grow, box[1] - grow,
+                 box[2] - box[0] + grow * 2, box[3] - box[1] + grow * 2);
+  ctx.restore();
+}
+
+// İz, kutunun alt orta noktasından biriktiriliyor. Figürler sahnede kalıcı
+// olduğu için geçmiş sıra numarasıyla tutuluyor; Python'da bunun karşılığı
+// takip edicinin verdiği tracker_id.
+const tracePaths = new Map();
+
+function pushTrace(index, box) {
+  let path = tracePaths.get(index);
+  if (!path) {
+    path = [];
+    tracePaths.set(index, path);
+  }
+  const point = [(box[0] + box[2]) / 2, box[3]];
+  const last = path[path.length - 1];
+  if (last) {
+    const travelled = Math.hypot(point[0] - last[0], point[1] - last[1]);
+    // Figür sahnenin kenarından dönüp öbür uçtan girdiğinde iz baştan başlamalı,
+    // yoksa ekranı boydan boya kesen bir çizgi kalır.
+    if (travelled > 150) path.length = 0;
+    // Python her karede bir nokta biriktiriyor; burada tarayıcının kare hızı
+    // değişken olduğu için ölçüt mesafe: iz hangi hızda çizilirse çizilsin
+    // aynı uzunlukta görünüyor.
+    else if (travelled < 4) return path;
+  }
+  path.push(point);
+  while (path.length > state.traceLength) path.shift();
+  return path;
+}
+
+function strokeTrace(path, colour) {
+  if (path.length < 2) return;
+  const bands = 4;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.strokeStyle = colour;
+  for (let band = 0; band < bands; band += 1) {
+    const from = Math.floor((band * (path.length - 1)) / bands);
+    const to = Math.floor(((band + 1) * (path.length - 1)) / bands);
+    if (to - from < 1) continue;
+    const weight = (band + 1) / bands;
+    ctx.globalAlpha = 0.35 + 0.65 * weight;
+    ctx.lineWidth = Math.max(1, state.thickness * weight);
+    ctx.beginPath();
+    ctx.moveTo(path[from][0], path[from][1]);
+    for (let step = from + 1; step <= to; step += 1) ctx.lineTo(path[step][0], path[step][1]);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawLabel(box, colour, text) {
@@ -1451,12 +1632,15 @@ function render(now = performance.now()) {
   }
 
   const frames = actorFrames(width, height);
+  if (!state.trace && tracePaths.size) tracePaths.clear();
   drawScene(frames, width, height);
 
   frames.forEach((frame, index) => {
     const colour = state.palette[index % state.palette.length];
     const accent = usesAccent() ? state.accent : colour;
     const box = frame.box;
+    if (state.trace) strokeTrace(pushTrace(index, box), colour);
+    if (state.pulse) strokePulse(box, colour);
     if (state.glow) {
       strokeBox(
         box, dim(colour, state.glowDim), state.thickness + state.glowThickness,
@@ -1480,6 +1664,7 @@ function render(now = performance.now()) {
 const SLIDERS = [
   "thickness", "roundness", "cornerLength", "dashLength", "gapLength",
   "armLength", "centerSize", "edgeThickness",
+  "wobble", "pulseReach", "traceLength",
   "glowThickness", "glowDim", "textScale", "textPadding", "labelRadius", "hudOpacity",
   "poseThickness", "poseRadius",
 ];
@@ -1489,6 +1674,8 @@ function rowIsVisible(token) {
   if (token === "hud") return state.hud;
   if (token === "glow") return state.glow;
   if (token === "labels") return state.labels;
+  if (token === "pulse") return state.pulse;
+  if (token === "trace") return state.trace;
   if (token === "accent") return usesAccent();
   return state.boxStyle === token;
 }
@@ -1500,9 +1687,9 @@ function syncControls() {
     document.getElementById(id).value = state[id];
     document.getElementById(id + "Out").textContent = state[id];
   }
-  document.getElementById("glow").checked = state.glow;
-  document.getElementById("labels").checked = state.labels;
-  document.getElementById("hud").checked = state.hud;
+  for (const id of ["glow", "labels", "hud", "pulse", "trace"]) {
+    document.getElementById(id).checked = state[id];
+  }
   document.getElementById("hudPosition").value = state.hudPosition;
   document.getElementById("textColor").value = state.textColor;
   document.getElementById("textColorOut").textContent = state.textColor;
@@ -1600,7 +1787,7 @@ function bindControls() {
   document.getElementById("hudPosition").addEventListener("change", (event) => {
     update(() => { state.hudPosition = event.target.value; });
   });
-  for (const id of ["glow", "labels", "hud"]) {
+  for (const id of ["glow", "labels", "hud", "pulse", "trace"]) {
     document.getElementById(id).addEventListener("change", (event) => {
       update(() => { state[id] = event.target.checked; });
     });
