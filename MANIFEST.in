@@ -1,5 +1,6 @@
 include LICENSE
 include README.md
+include README.tr.md
 include CHANGELOG.md
 
 # Testler sdist'ten de çalışabilsin: conftest.py olmadan test dosyaları import edilemiyor.

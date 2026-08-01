@@ -30,6 +30,11 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
   kaynak bittiğinde kuyruk boşaltılıyor, kullanıcı çıktığında ise
   boşaltılmıyor — o durumda bekleyen kare işlenmemeli.
 
+### Belgeler
+- README İngilizceye çevrildi; Türkçesi [README.tr.md](README.tr.md) olarak
+  duruyor ve ikisi birbirine bağlı. Ayrıntılı belgeler Türkçe kalıyor. Paketin
+  PyPI sayfası artık İngilizce.
+
 ### Depo
 - `__all__` ile gerçekten dışa aktarılanları karşılaştıran test. Bir ad `__all__`
   listesine eklenip import'u unutulduğunda hata ancak kullanıcı o adı çağırınca
