@@ -18,6 +18,11 @@ Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
   çekilmiyor, yüzü ortadan bölüyor.
 - Playground'un iskelet önizlemesine yüz eklendi; belgelerdeki iskelet görseli de
   üç topolojiyi gösteriyor.
+- İskelet önizlemesindeki çizimlerin altına silüet kondu. Kutu kipinde çizim bir
+  figürün üstünde duruyordu, iskelet kipinde çizgiler boşluktaydı ve özellikle
+  yüz beş noktadan ibaret bir işarete benziyordu. Silüetler kutulardaki
+  figürlerle aynı gri tonda ve iskeletin altında: çizimin kendisi değişmiyor,
+  yalnızca oturacağı bir gövde kazanıyor.
 
 ### Değişti
 - İskelet listesine bağlı iki test artık listeyi sabit saymıyor; yeni bir

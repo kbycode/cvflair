@@ -3,7 +3,7 @@ README ve belgelerdeki görselleri üretir:
 
 * `docs/box-styles.png` — aynı tespit, bütün çerçeve biçimleri yan yana.
 * `docs/theme-<ad>.png` — her tema, kendi çerçeve biçimiyle, tam kare.
-* `docs/skeletons.png` — el ve poz iskeleti, her temada.
+* `docs/skeletons.png` — el, poz ve yüz iskeleti, her temada.
 * `docs/motion.png` — nabız halkasının evreleri ve takip izi.
 
 Çalıştırmak için:  python tools/make_style_sheet.py
@@ -138,15 +138,67 @@ def face_points(cx: float, cy: float, scale: float) -> np.ndarray:
     return np.array([[cx + dx * scale, cy + dy * scale] for dx, dy in layout])
 
 
+#: Sahnedeki figürlerin grisi; playground'daki FIGURE ile aynı ton.
+FIGURE = (178, 161, 152)
+FIGURE_DARK = (136, 116, 108)
+
+
+def draw_subject(frame: np.ndarray, points: np.ndarray, edges, weight: int) -> None:
+    """İskeletin altına aynı geometriden kalın bir kütle çizer."""
+    for first, second in edges:
+        cv2.line(
+            frame, tuple(points[first].astype(int)), tuple(points[second].astype(int)),
+            FIGURE, weight, cv2.LINE_AA,
+        )
+
+
+def fill_polygon(frame: np.ndarray, points: np.ndarray, indices) -> None:
+    cv2.fillPoly(frame, [points[list(indices)].astype(np.int32)], FIGURE, cv2.LINE_AA)
+
+
+def draw_face_subject(frame: np.ndarray, points: np.ndarray) -> None:
+    """Baş ve omuz: beş nokta tek başına yüz olduğunu anlatmıyor."""
+    left, right, nose = points[0], points[1], points[2]
+    span = float(np.hypot(*(right - left)))
+    angle = float(np.degrees(np.arctan2(right[1] - left[1], right[0] - left[0])))
+    center = tuple(np.mean([left, right, nose], axis=0).astype(int))
+
+    along = np.array([np.cos(np.radians(angle)), np.sin(np.radians(angle))])
+    down = np.array([-along[1], along[0]])
+    # Omuz başın altına iniyor: merkeze çizilirse başın arkasında kalıp görünmüyor.
+    shoulder = tuple((np.array(center) + down * span * 1.45).astype(int))
+    cv2.ellipse(frame, shoulder, (int(span * 1.0), int(span * 0.45)),
+                angle, 180, 360, FIGURE_DARK, -1, cv2.LINE_AA)
+    for side in (-1, 1):
+        offset = along * side * span * 0.62
+        cv2.ellipse(frame, tuple((np.array(center) + offset).astype(int)),
+                    (int(span * 0.13), int(span * 0.2)), angle, 0, 360, FIGURE, -1, cv2.LINE_AA)
+    cv2.ellipse(frame, center, (int(span * 0.62), int(span * 0.82)),
+                angle, 0, 360, FIGURE, -1, cv2.LINE_AA)
+
+
 def skeleton_cell(theme_name: str) -> np.ndarray:
     width, height = 380, 300
     column = np.linspace(26, 52, width, dtype=np.uint8)
     frame = np.repeat(column[None, :, None], height, axis=0).repeat(3, axis=2).copy()
 
     theme = get_theme(theme_name)
-    theme.annotate_keypoints(frame, KeyPoints(xy=hand_points(85, 225)), HAND_21)
-    theme.annotate_keypoints(frame, KeyPoints(xy=pose_points(225, 195), class_id=[1]), POSE_17)
-    theme.annotate_keypoints(frame, KeyPoints(xy=face_points(318, 150, 115), class_id=[2]), FACE_5)
+    hand = hand_points(78, 232)
+    pose = pose_points(206, 205)
+    face = face_points(315, 140, 100)
+
+    # Siluetler önce: çizim bir gövdenin üstünde dursun, boşlukta kalmasın.
+    draw_subject(frame, hand, HAND_21, 15)
+    fill_polygon(frame, hand, (0, 5, 9, 13, 17))
+    draw_subject(frame, pose, POSE_17, 17)
+    fill_polygon(frame, pose, (5, 6, 12, 11))
+    cv2.circle(frame, tuple(pose[0].astype(int)),
+               int(np.hypot(*(pose[5] - pose[6])) * 0.42), FIGURE, -1, cv2.LINE_AA)
+    draw_face_subject(frame, face)
+
+    theme.annotate_keypoints(frame, KeyPoints(xy=hand[None, ...]), HAND_21)
+    theme.annotate_keypoints(frame, KeyPoints(xy=pose[None, ...], class_id=[1]), POSE_17)
+    theme.annotate_keypoints(frame, KeyPoints(xy=face[None, ...], class_id=[2]), FACE_5)
     cv2.putText(
         frame, theme_name, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
         (230, 230, 230), 1, cv2.LINE_AA,
