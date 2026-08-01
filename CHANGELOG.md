@@ -2,7 +2,7 @@
 
 Sürümleme [Semantic Versioning](https://semver.org/lang/tr/) izler.
 
-## Yayınlanmamış
+## 0.11.0 — 2026-08-01
 
 ### Eklendi
 - **`cvflair` komutu.** Kamerayı, bir videoyu, tek bir görseli ya da bir klasör
